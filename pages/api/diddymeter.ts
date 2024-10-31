@@ -4,6 +4,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 type ResponseData = {
   tracks?: (CompleteTrackInfo | null)[];
   count?: number;
+  totalScore?: number;
   message: string;
 }
  
@@ -20,8 +21,9 @@ export default async function handler(
 
   try {
     const tracksInfo = await getCompleteTracksInfo(spotifyUrl);
+    const totalScore = tracksInfo.reduce((acc, track) => (acc + (track?.score.score || 0)), 0);
     
-    res.status(200).json({ message: "Tracks succesfully retrieved", count: tracksInfo.length, tracks: tracksInfo });
+    res.status(200).json({ message: "Tracks succesfully retrieved", totalScore, count: tracksInfo.length, tracks: tracksInfo });
 
   } catch (error: unknown) {
     if (error instanceof Error) {
