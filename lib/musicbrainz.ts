@@ -1,91 +1,93 @@
 import axios from 'axios';
-import { Recording, Release, TrackDetails, ProducerRelation, ReleaseDetails } from './musicbrainzTypes';
+import { Recording, Release, TrackDetails, ReleaseDetails, NameId, Label, Relation, ArtistCredit, Involvement } from '@/lib/musicbrainzTypes';
+import withCacheAndLimit from '@/lib/cache';
 
 const BASE_URL = 'https://musicbrainz.org/ws/2';
 const USER_AGENT = 'DiddyTrackIt/1.0 (canessa.alex@gmail.com)';
-const MAX_DATE_MARGIN_DAYS = 30; // Maximum date difference in days for matching
 
-/**
- * Calculates the absolute difference in days between two dates.
- */
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function normalizeDate(date: string): string {
+  if (/^\d{4}$/.test(date)) {
+    return `${date}-01-01`;
+  }
+  if (/^\d{4}-\d{2}$/.test(date)) {
+    return `${date}-01`;
+  }
+  return date;
+}
+
 function differenceInDays(date1: string, date2: string): number {
   const time1 = new Date(date1).getTime();
   const time2 = new Date(date2).getTime();
   return Math.abs((time1 - time2) / (1000 * 60 * 60 * 24));
 }
 
-/**
- * Finds the closest "Official" release to the target date within a specified margin.
- */
-function findClosestOfficialRelease(releases: Release[], targetDate: string): Release | null {
-  return releases.reduce<Release | null>((closestRelease, release) => {
-    if (release.status !== 'Official' || !release.date) {
-     return closestRelease;
-    }
+function findClosestRelease(releases: Release[], targetDate: string): Release | null {
+  const normalizedTargetDate = normalizeDate(targetDate);
 
-    if (release.date === targetDate) {
-      return release;
-    }
+  // Attempt to find the closest official release
+  const closestOfficialRelease = releases
+    .filter(release => release.status === 'Official' && release.date)
+    .reduce<Release | null>((closest, release) => {
+      const daysDifference = differenceInDays(normalizeDate(release.date), normalizedTargetDate);
+      return !closest || daysDifference < differenceInDays(normalizeDate(closest.date), normalizedTargetDate)
+        ? release
+        : closest;
+    }, null);
 
-    const differenceInDaysToTarget = differenceInDays(release.date, targetDate);
-
-    if (
-      differenceInDaysToTarget <= MAX_DATE_MARGIN_DAYS &&
-      (!closestRelease || differenceInDaysToTarget < differenceInDays(closestRelease.date, targetDate))
-    ) {
-      return release;
-    }
-
-    return closestRelease;
-  }, null);
+  // If no official release is close enough, fallback to closest release regardless of status
+  return closestOfficialRelease || 
+    releases
+      .filter(release => release.date)
+      .reduce<Release | null>((closest, release) => {
+        const daysDifference = differenceInDays(normalizeDate(release.date), normalizedTargetDate);
+        return !closest || daysDifference < differenceInDays(normalizeDate(closest.date), normalizedTargetDate)
+          ? release
+          : closest;
+      }, null);
 }
 
-/**
- * Retrieves track details by ISRC, including closest release date, label, and producers.
- */
-export async function getTrackDetailsByISRC(isrc: string, targetDate: string): Promise<TrackDetails> {
-  // Step 1: Search for the recording by ISRC
-  const recordingResponse = await axios.get<{ recordings: Recording[] }>(`${BASE_URL}/recording`, {
-    headers: { 'User-Agent': USER_AGENT },
-    params: { query: `isrc:${isrc}`, fmt: 'json' }
-  });
+export type RelationsByType = Record<string, NameId[]>;
 
-  const recording = recordingResponse.data.recordings?.[0];
-  if (!recording || !recording.id) throw new Error("No recording found for this ISRC.");
+export function transformRelations(relations: Relation[]): RelationsByType {
+  return relations.reduce<RelationsByType>((acc, relation) => {
+    const { type, artist } = relation;
 
-  const closestRelease = findClosestOfficialRelease(recording.releases || [], targetDate);
-  if (!closestRelease) {
-    throw new Error("No matching official release found close to the target date.");
+    if (!type || !artist) return acc;
+
+    return {
+      ...acc,
+      [type]: [
+        ...(acc[type] || []),
+        { name: artist.name, id: artist.id },
+      ],
+    };
+  }, {});
+}
+
+export async function getTrackDetailsByISRC(isrc: string, targetDate: string): Promise<TrackDetails | null> {
+  const recording = await fetchRecordingByISRC(isrc);
+  
+  if (!recording) {
+    console.error(`No recording found for ISRC ${isrc}.`);
+    return null;
   }
 
-  // Step 3: Retrieve producer details from recording relations
-  const recordingDetailsResponse = await axios.get<Recording>(`${BASE_URL}/recording/${recording.id}`, {
-    headers: { 'User-Agent': USER_AGENT },
-    params: { inc: 'artist-rels', fmt: 'json' }
-  });
+  const closestRelease = findClosestRelease(recording.releases || [], targetDate);
+  if (!closestRelease) {
+    throw new Error(`No matching official release found close to the target date (${targetDate}).`);
+  }
 
-  const producers = recordingDetailsResponse.data.relations
-    ?.filter((relation): relation is ProducerRelation => relation.type === 'producer')
-    .map(({ artist: { name, id }}) => ({ id, name })) || [];
+  const { transformedRelations } = await fetchRecordingDetails(recording.id);
+  const { artist, features, labels } = await fetchReleaseDetails(closestRelease.id, recording['artist-credit']);
 
-  // Step 4: Retrieve label details from the closest release
-  const releaseDetailsResponse = await axios.get<ReleaseDetails>(`${BASE_URL}/release/${closestRelease.id}`, {
-    headers: { 'User-Agent': USER_AGENT },
-    params: { inc: 'labels+artists', fmt: 'json' }
-  });
-  const artist =  {
-    id: releaseDetailsResponse.data["artist-credit"][0].artist.id,
-    name: releaseDetailsResponse.data["artist-credit"][0].artist.name
-  };
-  const features = recording['artist-credit']
-    .map(artist => {
-      return {
-        id: artist.artist.id,
-        name: artist.artist.name
-      };
-    })
-    .filter((feature => feature.id !== artist.id));
-  const labels = releaseDetailsResponse.data["label-info"].map(({ label: { name, id } }) => ({ name, id })) || [];;
+  const producers = transformedRelations["producer"] || [];
+  const involvement: Involvement[] = Object.entries(transformedRelations)
+    .filter(([type]) => type !== "producer")
+    .map(([type, artists]) => ({ type, artists }));
 
   return {
     title: recording.title,
@@ -94,5 +96,85 @@ export async function getTrackDetailsByISRC(isrc: string, targetDate: string): P
     closestReleaseDate: closestRelease.date,
     labels,
     producers,
+    involvement,
   };
+}
+
+async function fetchRecordingByISRC(isrc: string): Promise<Recording | null> {
+  return withCacheAndLimit<Recording | null>(`recording:${isrc}`, async () => {
+    const response = await axios.get<{ recordings: Recording[] }>(`${BASE_URL}/recording`, {
+      headers: { 'User-Agent': USER_AGENT },
+      params: { query: `isrc:${isrc}`, fmt: 'json' }
+    });
+    return response.data.recordings?.[0] || null;
+  });
+}
+
+type FetchRecordingDetails = {
+  transformedRelations: RelationsByType;
+  producers: NameId[];
+};
+
+async function fetchRecordingDetails(recordingId: string): Promise<FetchRecordingDetails> {
+  return withCacheAndLimit<FetchRecordingDetails>(`recording:${recordingId}`, async () => {
+      const response = await axios.get<Recording>(`${BASE_URL}/recording/${recordingId}`, {
+        headers: { 'User-Agent': USER_AGENT },
+        params: { inc: 'artist-rels', fmt: 'json' }
+      });
+
+      const relations = response.data.relations || [];
+      const transformedRelations = transformRelations(relations);
+      const producers = extractProducers(relations);
+
+      return { transformedRelations, producers };
+    });
+}
+
+type FetchReleaseDetails = {
+  artist: NameId;
+  features: NameId[];
+  labels: Label[];
+}
+
+async function fetchReleaseDetails(releaseId: string, artistCredit: ArtistCredit[]): Promise<FetchReleaseDetails> {
+  return withCacheAndLimit<FetchReleaseDetails>(`release:${releaseId}`, async () => {
+    const response = await axios.get<ReleaseDetails>(`${BASE_URL}/release/${releaseId}`, {
+      headers: { 'User-Agent': USER_AGENT },
+      params: { inc: 'labels+artists', fmt: 'json' }
+    });
+
+    const artist = {
+      id: response.data["artist-credit"][0].artist?.id || "Not found",
+      name: response.data["artist-credit"][0].artist?.name || "Not found",
+    };
+
+    const features = extractFeatures(artistCredit, artist.id);
+    const labels = response.data["label-info"].map(({ label: { name, id } }) => ({ name, id })) || [];
+
+    return { artist, features, labels };
+  });
+}
+
+function extractProducers(relations: Relation[]): NameId[] {
+  return relations
+    .filter((relation): relation is Relation => relation.type === 'producer')
+    .map(({ artist: { name, id } }) => ({ id, name })) || [];
+}
+
+function extractFeatures(artistCredit: ArtistCredit[], mainArtistId: string): NameId[] {
+  return artistCredit
+    .map(({ artist }) => ({ id: artist.id, name: artist.name }))
+    .filter(feature => feature.id !== mainArtistId);
+}
+
+// A utility function to process the ISRCs with batching
+export async function processISRCsInBatches(isrcs: string[], targetDates: string[]): Promise<(TrackDetails | null)[]> {
+  const results: (TrackDetails | null)[] = [];
+  
+  for (let i = 0; i < isrcs.length; i++) {
+    const trackDetails = await getTrackDetailsByISRC(isrcs[i], targetDates[i]);
+    results.push(trackDetails);
+  }
+  
+  return results;
 }

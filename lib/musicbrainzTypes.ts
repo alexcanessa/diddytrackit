@@ -6,13 +6,7 @@ export type NameId = {
 // Type for an individual artist credit
 export type ArtistCredit = {
   name: string;
-  artist:NameId
-};
-
-// Type for a producer in the recording relations
-export type ProducerRelation = {
-  type: 'producer';
-  artist: NameId
+  artist: NameId;
 };
 
 // Type for labels associated with a release
@@ -31,13 +25,38 @@ export type Release = {
   labels?: LabelObject[];
 };
 
+export interface Artist {
+  id: string;
+  name: string;
+  "sort-name": string;
+  type: string;
+  "type-id"?: string;
+  disambiguation?: string;
+}
+
+export interface Relation {
+  artist: Artist;
+  type: string;
+  "type-id"?: string;
+  "target-type"?: string;
+  "source-credit"?: string;
+  "target-credit"?: string;
+  "attribute-values"?: Record<string, unknown>;
+  "attribute-ids"?: Record<string, string>;
+  attributes?: string[];
+  direction?: string;
+  begin?: string | null;
+  end?: string | null;
+  ended?: boolean;
+}
+
 // Type for a recording, including artist credits and associated releases
 export type Recording = {
   id: string;
   title: string;
   'artist-credit': ArtistCredit[];
   releases: Release[];
-  relations?: ProducerRelation[]; // Only present if requested with artist-rels
+  relations?: Relation[]; // Only present if requested with artist-rels
 };
 
 // Type for the release details response, including labels
@@ -46,12 +65,17 @@ export type ReleaseDetails = {
   "artist-credit": ArtistCredit[];
 };
 
-// Type for the output of the main function with complete track details
-export type TrackDetails = {
+export interface Involvement {
+  type: string;
+  artists: NameId[];
+}
+
+export interface TrackDetails {
   title: string;
   artist: NameId;
   features: NameId[];
+  producers: NameId[];
   closestReleaseDate: string;
   labels: Label[];
-  producers: ProducerRelation["artist"][];
-};
+  involvement: Involvement[];
+}

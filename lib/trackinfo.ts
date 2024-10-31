@@ -1,50 +1,41 @@
-import { calculateDiddymeter } from "@/lib/diddymeter";
+import { calculateDiddymeter, FinalScore } from "@/lib/diddymeter";
 import { getTracksInfo, SpotifyTrackInfo } from '@/lib/spotify';
-import { getTrackDetailsByISRC } from '@/lib/musicbrainz';
+import { getTrackDetailsByISRC, } from '@/lib/musicbrainz';
 import { Label, NameId, TrackDetails } from '@/lib/musicbrainzTypes';
 
 export type CompleteTrackInfo = SpotifyTrackInfo & {
-  artist: NameId;
-  features: NameId[];
-  producers: NameId[];
-  labels: Label[];
-  closestReleaseDate?: string;
+  score: FinalScore;
 };
 
-/**
- * Retrieves complete track information, including producers and label if available
- * @param spotifyUrl - Spotify URL for the track
- * @returns Array of complete track information with optional producers and label
- */
 export async function getCompleteTracksInfo(spotifyUrl: string): Promise<(CompleteTrackInfo | null)[]> {
   const tracksInfo = await getTracksInfo(spotifyUrl);
+  const completeTracksInfo: (CompleteTrackInfo | null)[] = [];
 
-  return Promise.all(
-    tracksInfo.map(async (track) => {
-      if (!track.isrc || !track.release_date) {
-        return null;
+  for (let track of tracksInfo) {
+    if (!track.isrc || !track.release_date) {
+      continue;
+    }
+
+    
+    try {
+      const trackDetails: TrackDetails | null = await getTrackDetailsByISRC(track.isrc, track.release_date);
+      
+      if (!trackDetails) {
+        continue;
       }
+      
+      const score = calculateDiddymeter(trackDetails);
+      
+      completeTracksInfo.push({
+        ...track,
+        // ...trackDetails,
+        score
+      });
+    } catch (error) {
+      console.error(`Error fetching details for track with ISRC ${track.isrc}:`, error);
+      continue;
+    }
+  }
 
-      try {
-        const { producers, labels, closestReleaseDate, artist, features }: TrackDetails = await getTrackDetailsByISRC(track.isrc, track.release_date);
-
-        const completeTrack: CompleteTrackInfo = {
-          ...track,
-          artist,
-          features,
-          producers,
-          labels,
-          closestReleaseDate
-        };
-
-        return {
-          ...completeTrack,
-          score: calculateDiddymeter(completeTrack)
-        }
-      } catch (error) {
-        console.error(`Error fetching details for track with ISRC ${track.isrc}:`, error);
-        return null;
-      }
-    })
-  );
+  return completeTracksInfo;
 }
