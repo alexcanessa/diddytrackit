@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "See how likely it is that Diddy is cashing in on your Spotify tracks",
     start_url: "/",
     display: "standalone",
-    background_color: "#1e0a45",
-    theme_color: "#1e0a45",
+    background_color: "#382d64",
+    theme_color: "#382d64",
     icons: [
       {
         src: "/icon-512x512.png",
