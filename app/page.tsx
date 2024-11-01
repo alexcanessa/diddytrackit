@@ -51,7 +51,7 @@ export default function Home() {
         title="Diddy Track It?"
         layout={submitState === "none" ? "default" : "slim"}
       />
-      <p className="text-center mb-8">
+      <p className="text-center mb-8 px-8 text-lg">
         See how likely it is that Diddy is cashing in on your Spotify tracks.
       </p>
 
