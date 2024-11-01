@@ -56,13 +56,12 @@ async function getTracksInfo(spotifyUrl: string): Promise<SpotifyTrackInfo[]> {
   const spotifyApi = await initializeSpotifyApi();
   const { type, id } = spotifyResource;
 
-  if (type === "album") {
-    throw new Error("Currently the app doesn't support albums");
-  }
-
   if (type === "track") {
     return [mapTrackToSpotifyTrackInfo(await spotifyApi.tracks.get(id))];
   }
+
+  // @todo: implement support for albums and playlists.
+  throw new Error("Currently the app doesn't support albums or playlists");
 
   const response = await spotifyApi.playlists.getPlaylistItems(id);
 

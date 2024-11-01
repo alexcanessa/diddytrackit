@@ -5,7 +5,7 @@ const phrases = [
   "Did you know Diddy might be cashing in on more tracks than you think?",
   "Checking if Diddy’s royalty count is going up...",
   "The more you listen, the more he earns. Just saying!",
-  "Seeing if Diddy has his hand in your playlist...",
+  "Seeing if Diddy has his hand in your tracks...",
   "Scanning for those Diddy royalties...",
   "Did you ever wonder where your streams are going?",
   "Almost there... uncovering the royalty secrets!",

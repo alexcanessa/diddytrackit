@@ -57,7 +57,7 @@ export default function Home() {
 
       <div className="flex items-center justify-center mx-auto max-w-[600px]">
         <SingleInputForm
-          placeholder="Enter a Spotify track or playlist URL"
+          placeholder="Enter a Spotify track URL"
           onSubmit={handleSubmit}
         />
       </div>
