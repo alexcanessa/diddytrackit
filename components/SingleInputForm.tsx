@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { FiX, FiArrowRight } from "react-icons/fi";
-import BuyMeACoffee from "./BuyMeACoffee";
 
 export type FormProps = {
   placeholder?: string;

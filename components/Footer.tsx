@@ -1,4 +1,4 @@
-import { FaHeart, FaCoffee } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa";
 import BuyMeACoffee from "./BuyMeACoffee";
 
 const Footer = () => {
