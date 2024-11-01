@@ -1,7 +1,7 @@
 export type NameId = {
   name: string;
   id: string;
-}
+};
 
 // Type for an individual artist credit
 export type ArtistCredit = {
@@ -10,7 +10,7 @@ export type ArtistCredit = {
 };
 
 // Type for labels associated with a release
-export type Label = NameId
+export type Label = NameId;
 
 export type LabelObject = {
   label: Label;
@@ -54,7 +54,7 @@ export interface Relation {
 export type Recording = {
   id: string;
   title: string;
-  'artist-credit': ArtistCredit[];
+  "artist-credit": ArtistCredit[];
   releases: Release[];
   relations?: Relation[]; // Only present if requested with artist-rels
 };

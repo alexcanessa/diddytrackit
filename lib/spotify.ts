@@ -1,7 +1,9 @@
-import { SpotifyApi, Track } from '@spotify/web-api-ts-sdk';
+import { SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
 
 if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
-  throw new Error("SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set in the environment.");
+  throw new Error(
+    "SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set in the environment."
+  );
 }
 
 export type SpotifyTrackInfo = {
@@ -13,7 +15,7 @@ export type SpotifyTrackInfo = {
 };
 
 type SpotifyResource = {
-  type: 'track' | 'album' | 'playlist';
+  type: "track" | "album" | "playlist";
   id: string;
 };
 
@@ -40,7 +42,7 @@ function mapTrackToSpotifyTrackInfo(track: Track): SpotifyTrackInfo {
     SID: track.id,
     isrc: track.external_ids?.isrc,
     album: track.album.name,
-    release_date: track.album.release_date
+    release_date: track.album.release_date,
   };
 }
 
@@ -69,22 +71,23 @@ async function getTracksInfo(spotifyUrl: string): Promise<SpotifyTrackInfo[]> {
     throw new Error("Playlist or album is too large to fetch all tracks.");
   }
 
-  return response.items.map(item => {
+  return response.items.map((item) => {
     return mapTrackToSpotifyTrackInfo(item.track);
   });
 }
 
 function parseSpotifyUrl(url: string): SpotifyResource | null {
-  const regex = /https?:\/\/open\.spotify\.com\/(?:intl-\w+\/)?(track|album|playlist)\/([a-zA-Z0-9]+)/;
+  const regex =
+    /https?:\/\/open\.spotify\.com\/(?:intl-\w+\/)?(track|album|playlist)\/([a-zA-Z0-9]+)/;
   const match = url.match(regex) || [];
   const [, type, id] = match;
 
   if (!(type && id)) {
     return null;
   }
-  
+
   return {
-    type: type as SpotifyResource['type'],
+    type: type as SpotifyResource["type"],
     id,
   };
 }

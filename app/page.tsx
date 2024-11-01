@@ -38,18 +38,28 @@ export default function Home() {
       setSubmitState("success");
     } catch (error) {
       console.error("Error fetching data:", error);
-      setErrorMessage("An error occurred while connecting to the server. Please try again.");
+      setErrorMessage(
+        "An error occurred while connecting to the server. Please try again."
+      );
       setSubmitState("error");
     }
   }, []);
 
   return (
     <div>
-      <Header title="Diddy Track It?" layout={submitState === "none" ? "default" : "slim"} />
-      <p className="text-center mb-8">See how likely it is that Diddy is cashing in on your Spotify tracks.</p>
+      <Header
+        title="Diddy Track It?"
+        layout={submitState === "none" ? "default" : "slim"}
+      />
+      <p className="text-center mb-8">
+        See how likely it is that Diddy is cashing in on your Spotify tracks.
+      </p>
 
       <div className="flex items-center justify-center mx-auto max-w-[600px]">
-        <SingleInputForm placeholder="Enter a Spotify track or playlist URL" onSubmit={handleSubmit} />
+        <SingleInputForm
+          placeholder="Enter a Spotify track or playlist URL"
+          onSubmit={handleSubmit}
+        />
       </div>
 
       <div className="mt-10">

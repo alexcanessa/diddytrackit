@@ -25,9 +25,11 @@ const Loading = () => {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
       <FaCompactDisc className="animate-spin text-[#4a306d] text-4xl mb-4" />
-      <p className="text-lg font-semibold text-gray-500">{phrases[currentPhraseIndex]}</p>
+      <p className="text-lg font-semibold text-gray-500">
+        {phrases[currentPhraseIndex]}
+      </p>
     </div>
   );
-}
+};
 
 export default Loading;

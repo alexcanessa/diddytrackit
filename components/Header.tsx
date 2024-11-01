@@ -7,9 +7,11 @@ export interface HeaderProps {
 
 const Header = ({ title, layout = "default" }: HeaderProps) => {
   return (
-    <div className={classnames("header", {
-      "header--slim": layout === "slim",
-    })}>
+    <div
+      className={classnames("header", {
+        "header--slim": layout === "slim",
+      })}
+    >
       <h1 className="title">{title}</h1>
     </div>
   );

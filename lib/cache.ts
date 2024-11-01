@@ -1,5 +1,5 @@
-import { Redis } from '@upstash/redis';
-import Bottleneck from 'bottleneck';
+import { Redis } from "@upstash/redis";
+import Bottleneck from "bottleneck";
 
 // Set up Upstash Redis client
 const redis = new Redis({
@@ -12,12 +12,17 @@ const limiter = new Bottleneck({
   minTime: 1000, // 1 request per second
 });
 
-export default async function withCacheAndLimit<Type>(key: string, callback: () => Promise<Type>): Promise<Type> {
+export default async function withCacheAndLimit<Type>(
+  key: string,
+  callback: () => Promise<Type>
+): Promise<Type> {
   try {
     // Check cache first
     const cachedData = await redis.get(key);
     if (cachedData) {
-      return JSON.parse(typeof cachedData === 'string' ? cachedData : JSON.stringify(cachedData));
+      return JSON.parse(
+        typeof cachedData === "string" ? cachedData : JSON.stringify(cachedData)
+      );
     }
 
     // Execute callback with rate limiting and store the result
