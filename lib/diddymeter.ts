@@ -15,6 +15,7 @@ type BlacklistItem = Entity & {
 type ScoreDetail = {
   reason: string;
   score: number;
+  type: BlacklistItem["type"];
 };
 
 export type FinalScore = {
@@ -74,7 +75,8 @@ const scoreEntities = (entities: Entity[], type: ContributionType): ScoreDetail[
       const blacklistItem = BLACKLIST.find(item => item.id === entity.id && item.type === type);
       return {
         reason: getContributionMessage(blacklistItem?.name ?? entity.name, type),
-        score: blacklistItem?.score ?? SCORE_PER_ROLE.default
+        score: blacklistItem?.score ?? SCORE_PER_ROLE.default,
+        type: type
       };
     });
 };

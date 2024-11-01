@@ -1,7 +1,7 @@
 import { getCompleteTracksInfo, CompleteTrackInfo } from "@/lib/trackinfo";
 import type { NextApiRequest, NextApiResponse } from 'next'
  
-type ResponseData = {
+export type ResponseData = {
   tracks?: (CompleteTrackInfo | null)[];
   count?: number;
   totalScore?: number;

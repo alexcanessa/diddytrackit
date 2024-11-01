@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Modak&family=Roboto:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,17 +7,54 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --title-font: "Modak", cursive;
+  --font: "Roboto", system-ui;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* --background: #0a0a0a;
+    --foreground: #ededed; */
   }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font);
+}
+
+.title {
+  font-family: var(--title-font);
+  font-size: 4rem;
+  line-height: 4rem;
+
+  transition: font-size 0.5s ease-in-out;
+}
+
+.header {
+  background: linear-gradient(135deg, #2e2b5f, #4a306d, #803977);
+  background-attachment: fixed;
+  background-size: cover;
+  height: 50vh;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-direction: column;
+  color: #ffffff;
+  padding: 50px;
+  margin-bottom: 50px;
+  text-align: center;
+  
+  transition: height 0.5s ease-in-out, padding 0.5s ease-in-out;
+}
+
+.header--slim {
+  height: 100px;
+  padding: 20px;
+}
+
+.header--slim .title {
+  font-size: 3rem;
+  line-height: 3rem;
 }
