@@ -72,13 +72,14 @@ async function getTracksInfo(spotifyUrl: string): Promise<SpotifyTrackInfo[]> {
 
     if (response.total > response.limit) {
       // @todo: should really handle pagination 🙄.
-      throw new Error("Playlist is too large to fetch all tracks.");
+      console.warn("Playlist is too large to fetch all tracks.");
     }
 
     return response.items.map((item) => {
       return mapTrackToSpotifyTrackInfo(item.track);
     });
-  } catch {
+  } catch (error) {
+    console.error(error);
     throw new Error(
       "Failed to fetch playlist tracks. Most likely the playlist is too big. We're working on caching as much data as possible."
     );
