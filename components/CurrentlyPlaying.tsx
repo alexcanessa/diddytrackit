@@ -25,7 +25,7 @@ const CurrentlyPlaying = () => {
   }
 
   return (
-    <div className={classnames(boxClasses, "min-w-full")}>
+    <div className={classnames(boxClasses, "w-full")}>
       <div className="flex w-full">
         <div className="mr-4 text-indigo-600 animate-pulse">
           <FaMusic className="mt-2 text-3xl" />
