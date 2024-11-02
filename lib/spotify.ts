@@ -63,19 +63,26 @@ async function getTracksInfo(spotifyUrl: string): Promise<SpotifyTrackInfo[]> {
     return [mapTrackToSpotifyTrackInfo(await spotifyApi.tracks.get(id))];
   }
 
-  // @todo: implement support for albums and playlists.
-  throw new Error("Currently the app doesn't support albums or playlists");
-
-  const response = await spotifyApi.playlists.getPlaylistItems(id);
-
-  if (response.total > response.limit) {
-    // @todo: should really handle pagination 🙄.
-    throw new Error("Playlist or album is too large to fetch all tracks.");
+  if (type === "album") {
+    throw new Error("Currently the app doesn't support albums.");
   }
 
-  return response.items.map((item) => {
-    return mapTrackToSpotifyTrackInfo(item.track);
-  });
+  try {
+    const response = await spotifyApi.playlists.getPlaylistItems(id);
+
+    if (response.total > response.limit) {
+      // @todo: should really handle pagination 🙄.
+      throw new Error("Playlist is too large to fetch all tracks.");
+    }
+
+    return response.items.map((item) => {
+      return mapTrackToSpotifyTrackInfo(item.track);
+    });
+  } catch {
+    throw new Error(
+      "Failed to fetch playlist tracks. Most likely the playlist is too big. We're working on caching as much data as possible."
+    );
+  }
 }
 
 function parseSpotifyUrl(url: string): SpotifyResource | null {
