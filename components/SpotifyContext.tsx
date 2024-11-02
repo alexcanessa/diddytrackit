@@ -28,7 +28,7 @@ interface SpotifyContextProps {
   isLoading: boolean;
 }
 
-const CURRENTLY_PLAYING_POLL_INTERVAL = 15000;
+const CURRENTLY_PLAYING_POLL_INTERVAL = 5000;
 
 const SpotifyContext = createContext<SpotifyContextProps | undefined>(
   undefined
@@ -91,7 +91,14 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      const data = await response.json();
+      const text = await response.text();
+
+      if (!text) {
+        setCurrentlyPlaying(null);
+        return;
+      }
+
+      const data = JSON.parse(text);
 
       if (!data.item) {
         setCurrentlyPlaying(null);

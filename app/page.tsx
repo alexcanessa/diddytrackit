@@ -70,8 +70,12 @@ export default function Home() {
         title="Diddy Track It?"
         layout={submitState === "none" ? "default" : "slim"}
       />
-      <p className="text-center mb-8 px-8 text-lg">
+      <p className="text-center px-8 text-lg">
         See how likely it is that Diddy is cashing in on your Spotify tracks.
+      </p>
+      <p className="text-center mb-9 text-gray-600 text-sm">
+        Diddy is just the start - when other names come up, we will keep the
+        list updated.
       </p>
 
       <div className="flex flex-col items-center justify-center mx-auto max-w-[500px] px-5">
@@ -96,6 +100,7 @@ export default function Home() {
           </>
         ) : (
           <>
+            <div className="my-4 text-gray-600 text-2xl">•</div>
             <CurrentlyPlaying />
           </>
         )}

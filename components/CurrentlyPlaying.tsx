@@ -2,15 +2,29 @@ import { useSpotify } from "@/components/SpotifyContext";
 import { FaMusic } from "react-icons/fa";
 import { InvolvementIcon } from "./TrackDetails";
 
+const boxClasses =
+  "flex flex-col text-left items-start justify-center p-4 rounded-lg shadow-lg bg-white max-w-md mx-auto border border-gray-200";
+
 const CurrentlyPlaying = () => {
   const { currentlyPlaying } = useSpotify();
 
   if (!currentlyPlaying) {
-    return null; // Do not render if no track is playing
+    return (
+      <div className={boxClasses}>
+        <p className="text-gray-600 text-lg">
+          🎶 Play something on your Spotify to see the score!
+        </p>
+        <p className="text-gray-400 text-sm mt-1">
+          Keep the music going and let{" "}
+          <span className="font-semibold text-indigo-500">DiddyTrackIt</span> do
+          the rest.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col w-full items-center p-4 rounded-lg shadow-lg bg-white max-w-md mx-auto mt-5 border border-gray-200">
+    <div className={boxClasses}>
       <div className="flex w-full">
         <div className="mr-4 text-indigo-600 animate-pulse">
           <FaMusic className="mt-2 text-3xl" />
@@ -53,7 +67,7 @@ const CurrentlyPlaying = () => {
                   : "bg-green-500 text-white"
               }`}
             >
-              Diddy Score: {currentlyPlaying.score?.score || "N/A"}
+              Diddy Score: {currentlyPlaying.score?.score || "0"}
             </span>
           </div>
         </div>
