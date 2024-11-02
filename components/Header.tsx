@@ -15,7 +15,7 @@ const Header = ({ title, layout = "default" }: HeaderProps) => {
 
   return (
     <div
-      className={classnames("header relative container", {
+      className={classnames("header relative", {
         "header--slim": layout === "slim",
       })}
     >
