@@ -43,10 +43,15 @@ function ScoreMeter({
   );
 }
 
-function Results({ data }: { data: ResponseData }) {
-  const { message, totalScore = 0, count = 0, tracks } = data;
+function Results({ data }: { data: Partial<ResponseData> }) {
+  const {
+    message = "Fetching tracks...",
+    totalScore = 0,
+    count = 0,
+    tracks = [],
+  } = data;
 
-  if (!tracks || count === 0) {
+  if (!tracks.length && count === 0) {
     return <p>No tracks found.</p>;
   }
 
@@ -63,7 +68,7 @@ function Results({ data }: { data: ResponseData }) {
       <div className="text-center mb-8">
         <ScoreMeter score={totalScore} totalTracks={count} />
         <p className="text-gray-600">
-          {message} ({count} tracks analysed)
+          {message} ({tracks.length}/{count} tracks analysed)
         </p>
         <p className="text-xl font-semibold mt-4 text-gray-800">
           {userMessage}

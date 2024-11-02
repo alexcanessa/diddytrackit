@@ -11,7 +11,11 @@ const phrases = [
   "Almost there... uncovering the royalty secrets!",
 ];
 
-const Loading = () => {
+type LoadingProps = {
+  progress: number;
+};
+
+const Loading = ({ progress }: LoadingProps) => {
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
 
   useEffect(() => {
@@ -23,10 +27,20 @@ const Loading = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <FaCompactDisc className="animate-spin text-[#4a306d] text-4xl mb-4" />
+    <div className="flex flex-col items-center justify-center h-full text-center space-y-4 px-2">
+      <FaCompactDisc className="animate-spin text-[#4a306d] text-4xl mb-2" />
       <p className="text-lg font-semibold text-gray-500">
         {phrases[currentPhraseIndex]}
+      </p>
+      {/* Progress Bar */}
+      <div className="w-full max-w-md bg-gray-200 rounded-full h-3 mt-4">
+        <div
+          className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        ></div>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">
+        Loading tracks... ({Math.round(progress)}%)
       </p>
     </div>
   );

@@ -8,6 +8,11 @@ export type SpotifyTrackInfo = {
   release_date: string;
 };
 
+export type SpotifyTracksResponse = {
+  tracks: SpotifyTrackInfo[];
+  total: number;
+};
+
 type SpotifyResource = {
   type: "track" | "album" | "playlist";
   id: string;
@@ -40,11 +45,11 @@ function mapTrackToSpotifyTrackInfo(track: Track): SpotifyTrackInfo {
   };
 }
 
-async function getTracksInfo(
+export async function getTracksInfo(
   spotifyUrl: string,
   page: number,
   limit: number
-): Promise<SpotifyTrackInfo[]> {
+): Promise<SpotifyTracksResponse> {
   const spotifyResource = parseSpotifyUrl(spotifyUrl);
 
   if (!spotifyResource) {
@@ -55,7 +60,10 @@ async function getTracksInfo(
   const { type, id } = spotifyResource;
 
   if (type === "track") {
-    return [mapTrackToSpotifyTrackInfo(await spotifyApi.tracks.get(id))];
+    return {
+      tracks: [mapTrackToSpotifyTrackInfo(await spotifyApi.tracks.get(id))],
+      total: 1,
+    };
   }
 
   if (type === "album") {
@@ -72,9 +80,12 @@ async function getTracksInfo(
       offset
     );
 
-    return response.items.map((item) => {
-      return mapTrackToSpotifyTrackInfo(item.track);
-    });
+    return {
+      tracks: response.items.map((item) =>
+        mapTrackToSpotifyTrackInfo(item.track)
+      ),
+      total: response.total, // Include the total track count from Spotify’s response
+    };
   } catch (error) {
     console.error(error);
     throw new Error(
@@ -98,5 +109,3 @@ function parseSpotifyUrl(url: string): SpotifyResource | null {
     id,
   };
 }
-
-export { getTracksInfo };

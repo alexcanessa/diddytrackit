@@ -11,9 +11,13 @@ export async function getCompleteTracksInfo(
   spotifyUrl: string,
   page: number = 1,
   limit: number = 20
-): Promise<(CompleteTrackInfo | null)[]> {
-  // Fetch paginated tracks from Spotify
-  const tracksInfo = await getTracksInfo(spotifyUrl, page, limit);
+): Promise<{ tracks: (CompleteTrackInfo | null)[]; total: number }> {
+  // Fetch paginated tracks and total count from Spotify
+  const { tracks: tracksInfo, total } = await getTracksInfo(
+    spotifyUrl,
+    page,
+    limit
+  );
   const completeTracksInfo: (CompleteTrackInfo | null)[] = [];
 
   for (const track of tracksInfo) {
@@ -46,5 +50,5 @@ export async function getCompleteTracksInfo(
     }
   }
 
-  return completeTracksInfo;
+  return { tracks: completeTracksInfo, total };
 }

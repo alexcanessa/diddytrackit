@@ -1,64 +1,111 @@
+// app/Home.tsx
+
 "use client";
 
 import SingleInputForm from "@/components/SingleInputForm";
 import Header from "@/components/Header";
-import Results from "@/components/Results"; // Ensure Results component is imported
-import { useCallback, useState } from "react";
-import { ResponseData } from "@/pages/api/diddymeter";
-import Loading from "@/components/Loading";
+import LoadingOverlay from "@/components/LoadingOverlay";
 import SpotifyLoginButton from "@/components/SpotifyLoginButton";
 import { useSpotify } from "@/components/SpotifyContext";
 import CurrentlyPlaying from "@/components/CurrentlyPlaying";
-import LoadingOverlay from "@/components/LoadingOverlay";
+import WhySpotify from "@/components/WhySpotify";
+import ResultsSection from "@/components/ResultsSection";
+import { useCallback, useState } from "react";
+import { CompleteTrackInfo } from "@/lib/trackinfo";
+import { ResponseData } from "@/pages/api/diddymeter";
+import Loading from "@/components/Loading";
 
 type SubmitState = "none" | "loading" | "success" | "error";
 
-const WhySpotify = () => {
-  return (
-    <div className="mt-4 max-w-md mx-auto text-center text-gray-500 text-sm leading-tight">
-      <p className="mt-1">
-        Connect with Spotify to let{" "}
-        <span className="text-indigo-500 font-semibold">DiddyTrackIt</span>{" "}
-        monitor your current track, alerting you if royalties might go to
-        Diddy—without storing any playlist or track data.
-      </p>
-    </div>
-  );
-};
-
 export default function Home() {
   const [submitState, setSubmitState] = useState<SubmitState>("none");
-  const [results, setResults] = useState<ResponseData | null>(null);
+  const [results, setResults] = useState<CompleteTrackInfo[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
   const { userId, isLoading } = useSpotify();
 
   const handleSubmit = useCallback(async (value: string) => {
     setSubmitState("loading");
+    setResults([]);
+    setProgress(0);
+
+    const limit = 20;
+    let page = 1;
+    let hasMore = true;
 
     try {
-      const response = await fetch("/api/diddymeter", {
+      const initialResponse = await fetch("/api/diddymeter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ spotifyUrl: value }),
+        body: JSON.stringify({ spotifyUrl: value, page, limit }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!initialResponse.ok) {
+        const errorData = await initialResponse.json();
         setErrorMessage(errorData.message || "An unexpected error occurred.");
         setSubmitState("error");
         return;
       }
 
-      const data: ResponseData = await response.json();
-      setResults(data);
+      const { totalTracks = 0 }: ResponseData = await initialResponse.json();
+
+      const totalBatches = Math.ceil(totalTracks / limit);
+
+      // Reset progress state for fake loading
+      setResults([]);
+      setProgress(0);
+      page = 1;
+      hasMore = true;
+
+      while (hasMore) {
+        const maxProgress = (page / totalBatches) * 100;
+
+        // Fake loading within min and max range for the current batch
+        const fakeProgressInterval = setInterval(() => {
+          setProgress((prevProgress) => {
+            const newProgress = prevProgress + Math.random() * 2; // Increment randomly between 0 and 2%
+            return Math.min(newProgress, maxProgress); // Cap progress at max for this batch
+          });
+        }, 300);
+
+        const response = await fetch("/api/diddymeter", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ spotifyUrl: value, page, limit }),
+        });
+
+        clearInterval(fakeProgressInterval); // Stop fake progress once batch is fetched
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setErrorMessage(errorData.message || "An unexpected error occurred.");
+          setSubmitState("error");
+          return;
+        }
+
+        const data: ResponseData = await response.json();
+
+        setResults((prevResults) => [
+          ...prevResults,
+          ...(data.tracks?.filter(
+            (track): track is CompleteTrackInfo => track !== null
+          ) || []),
+        ]);
+
+        // Set real progress for the batch and move to the next page
+        setProgress(maxProgress);
+        hasMore = data.hasMore || false;
+        page++;
+      }
+
       setSubmitState("success");
     } catch (error) {
       console.error("Error fetching data:", error);
-      setErrorMessage(
-        "An error occurred while connecting to the server. Please try again."
-      );
+      setErrorMessage("An error occurred. Please try again.");
       setSubmitState("error");
     }
   }, []);
@@ -80,11 +127,12 @@ export default function Home() {
 
       <div className="flex flex-col items-center justify-center mx-auto max-w-[500px] px-5">
         <SingleInputForm
-          placeholder="Enter a Spotify track URL"
+          placeholder="Enter a Spotify Track or Playlist URL"
           onSubmit={handleSubmit}
           onClear={() => {
-            setResults(null);
+            setResults([]);
             setSubmitState("none");
+            setProgress(0);
           }}
         />
         {submitState === "none" &&
@@ -108,8 +156,10 @@ export default function Home() {
       </div>
 
       <div className="mt-10">
-        {submitState === "loading" && <Loading />}
-        {submitState === "success" && results && <Results data={results} />}
+        <div className="max-w-xl mx-auto">
+          {submitState === "loading" && <Loading progress={progress} />}
+        </div>
+        {submitState === "success" && <ResultsSection results={results} />}
         {submitState === "error" && errorMessage && (
           <p className="text-center mt-8 text-red-500">{errorMessage}</p>
         )}
