@@ -1,5 +1,6 @@
 import { useSpotify } from "@/components/SpotifyContext";
 import { FaMusic } from "react-icons/fa";
+import classnames from "classnames";
 import { InvolvementIcon } from "./TrackDetails";
 
 const boxClasses =
@@ -24,7 +25,7 @@ const CurrentlyPlaying = () => {
   }
 
   return (
-    <div className={boxClasses}>
+    <div className={classnames(boxClasses, "min-w-full")}>
       <div className="flex w-full">
         <div className="mr-4 text-indigo-600 animate-pulse">
           <FaMusic className="mt-2 text-3xl" />
