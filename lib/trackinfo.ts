@@ -8,9 +8,12 @@ export type CompleteTrackInfo = SpotifyTrackInfo & {
 };
 
 export async function getCompleteTracksInfo(
-  spotifyUrl: string
+  spotifyUrl: string,
+  page: number = 1,
+  limit: number = 20
 ): Promise<(CompleteTrackInfo | null)[]> {
-  const tracksInfo = await getTracksInfo(spotifyUrl);
+  // Fetch paginated tracks from Spotify
+  const tracksInfo = await getTracksInfo(spotifyUrl, page, limit);
   const completeTracksInfo: (CompleteTrackInfo | null)[] = [];
 
   for (const track of tracksInfo) {
@@ -32,7 +35,6 @@ export async function getCompleteTracksInfo(
 
       completeTracksInfo.push({
         ...track,
-        // ...trackDetails,
         score,
       });
     } catch (error) {

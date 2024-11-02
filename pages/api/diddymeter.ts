@@ -6,6 +6,8 @@ export type ResponseData = {
   count?: number;
   totalScore?: number;
   message: string;
+  page?: number;
+  hasMore?: boolean;
 };
 
 export default async function handler(
@@ -18,19 +20,25 @@ export default async function handler(
   }
 
   const spotifyUrl = req.body.spotifyUrl;
+  const page = parseInt(req.body.page, 10) || 1;
+  const limit = parseInt(req.body.limit, 10) || 20;
 
   try {
-    const tracksInfo = await getCompleteTracksInfo(spotifyUrl);
+    const tracksInfo = await getCompleteTracksInfo(spotifyUrl, page, limit);
     const totalScore = tracksInfo.reduce(
       (acc, track) => acc + (track?.score.score || 0),
       0
     );
 
+    const hasMore = tracksInfo.length === limit; // If we fetched `limit` tracks, assume there's more to fetch.
+
     res.status(200).json({
-      message: "Tracks succesfully retrieved",
+      message: "Tracks successfully retrieved",
       totalScore,
       count: tracksInfo.length,
       tracks: tracksInfo,
+      page,
+      hasMore,
     });
   } catch (error: unknown) {
     if (error instanceof Error) {

@@ -1,13 +1,4 @@
-import { SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
-
-if (
-  !process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID ||
-  !process.env.SPOTIFY_CLIENT_SECRET
-) {
-  throw new Error(
-    "SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set in the environment."
-  );
-}
+import { MaxInt, SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
 
 export type SpotifyTrackInfo = {
   title: string;
@@ -23,8 +14,8 @@ type SpotifyResource = {
 };
 
 const spotifyApi = SpotifyApi.withClientCredentials(
-  process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
-  process.env.SPOTIFY_CLIENT_SECRET
+  process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!,
+  process.env.SPOTIFY_CLIENT_SECRET!
 );
 
 async function initializeSpotifyApi() {
@@ -49,7 +40,11 @@ function mapTrackToSpotifyTrackInfo(track: Track): SpotifyTrackInfo {
   };
 }
 
-async function getTracksInfo(spotifyUrl: string): Promise<SpotifyTrackInfo[]> {
+async function getTracksInfo(
+  spotifyUrl: string,
+  page: number,
+  limit: number
+): Promise<SpotifyTrackInfo[]> {
   const spotifyResource = parseSpotifyUrl(spotifyUrl);
 
   if (!spotifyResource) {
@@ -68,12 +63,14 @@ async function getTracksInfo(spotifyUrl: string): Promise<SpotifyTrackInfo[]> {
   }
 
   try {
-    const response = await spotifyApi.playlists.getPlaylistItems(id);
-
-    if (response.total > response.limit) {
-      // @todo: should really handle pagination 🙄.
-      console.warn("Playlist is too large to fetch all tracks.");
-    }
+    const offset = (page - 1) * limit; // Calculate offset for pagination
+    const response = await spotifyApi.playlists.getPlaylistItems(
+      id,
+      undefined,
+      undefined,
+      limit as MaxInt<10>,
+      offset
+    );
 
     return response.items.map((item) => {
       return mapTrackToSpotifyTrackInfo(item.track);
