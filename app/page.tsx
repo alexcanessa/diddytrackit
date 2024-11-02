@@ -87,23 +87,24 @@ export default function Home() {
             setSubmitState("none");
           }}
         />
-        {submitState === "none" && !userId ? (
-          <>
-            <div className="flex items-center my-2 space-x-4">
-              <span className="h-px w-full bg-gray-300"></span>
-              <span className="text-gray-500">or</span>
-              <span className="h-px w-full bg-gray-300"></span>
-            </div>
+        {submitState === "none" &&
+          (!userId ? (
+            <>
+              <div className="flex items-center my-2 space-x-4">
+                <span className="h-px w-full bg-gray-300"></span>
+                <span className="text-gray-500">or</span>
+                <span className="h-px w-full bg-gray-300"></span>
+              </div>
 
-            <SpotifyLoginButton />
-            <WhySpotify />
-          </>
-        ) : (
-          <>
-            <div className="my-4 text-gray-600 text-2xl">•</div>
-            <CurrentlyPlaying />
-          </>
-        )}
+              <SpotifyLoginButton />
+              <WhySpotify />
+            </>
+          ) : (
+            <>
+              <div className="my-4 text-gray-600 text-2xl">•</div>
+              <CurrentlyPlaying />
+            </>
+          ))}
       </div>
 
       <div className="mt-10">

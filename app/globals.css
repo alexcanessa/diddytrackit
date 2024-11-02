@@ -36,7 +36,7 @@ body {
   background: linear-gradient(135deg, #2e2b5f, #4a306d, #803977);
   background-attachment: fixed;
   background-size: cover;
-  height: 40vh;
+  height: 35vh;
   display: flex;
   justify-content: flex-end;
   align-items: center;
