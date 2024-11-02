@@ -1,6 +1,9 @@
 import { SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
 
-if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+if (
+  !process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID ||
+  !process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET
+) {
   throw new Error(
     "SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set in the environment."
   );
@@ -20,8 +23,8 @@ type SpotifyResource = {
 };
 
 const spotifyApi = SpotifyApi.withClientCredentials(
-  process.env.SPOTIFY_CLIENT_ID,
-  process.env.SPOTIFY_CLIENT_SECRET
+  process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
+  process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET
 );
 
 async function initializeSpotifyApi() {

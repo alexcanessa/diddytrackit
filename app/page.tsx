@@ -6,13 +6,31 @@ import Results from "@/components/Results"; // Ensure Results component is impor
 import { useCallback, useState } from "react";
 import { ResponseData } from "@/pages/api/diddymeter";
 import Loading from "@/components/Loading";
+import SpotifyLoginButton from "@/components/SpotifyLoginButton";
+import { useSpotify } from "@/components/SpotifyContext";
+import CurrentlyPlaying from "@/components/CurrentlyPlaying";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 type SubmitState = "none" | "loading" | "success" | "error";
+
+const WhySpotify = () => {
+  return (
+    <div className="mt-4 max-w-md mx-auto text-center text-gray-500 text-sm leading-tight">
+      <p className="mt-1">
+        Connect with Spotify to let{" "}
+        <span className="text-indigo-500 font-semibold">DiddyTrackIt</span>{" "}
+        monitor your current track, alerting you if royalties might go to
+        Diddy—without storing any playlist or track data.
+      </p>
+    </div>
+  );
+};
 
 export default function Home() {
   const [submitState, setSubmitState] = useState<SubmitState>("none");
   const [results, setResults] = useState<ResponseData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { userId, isLoading } = useSpotify();
 
   const handleSubmit = useCallback(async (value: string) => {
     setSubmitState("loading");
@@ -47,6 +65,7 @@ export default function Home() {
 
   return (
     <div>
+      {isLoading && <LoadingOverlay />}
       <Header
         title="Diddy Track It?"
         layout={submitState === "none" ? "default" : "slim"}
@@ -55,11 +74,31 @@ export default function Home() {
         See how likely it is that Diddy is cashing in on your Spotify tracks.
       </p>
 
-      <div className="flex items-center justify-center mx-auto max-w-[600px]">
+      <div className="flex flex-col items-center justify-center mx-auto max-w-[500px] px-5">
         <SingleInputForm
           placeholder="Enter a Spotify track URL"
           onSubmit={handleSubmit}
+          onClear={() => {
+            setResults(null);
+            setSubmitState("none");
+          }}
         />
+        {submitState === "none" && !userId ? (
+          <>
+            <div className="flex items-center my-2 space-x-4">
+              <span className="h-px w-full bg-gray-300"></span>
+              <span className="text-gray-500">or</span>
+              <span className="h-px w-full bg-gray-300"></span>
+            </div>
+
+            <SpotifyLoginButton />
+            <WhySpotify />
+          </>
+        ) : (
+          <>
+            <CurrentlyPlaying />
+          </>
+        )}
       </div>
 
       <div className="mt-10">

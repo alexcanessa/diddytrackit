@@ -6,12 +6,18 @@ import { FiX, FiArrowRight } from "react-icons/fi";
 export type FormProps = {
   placeholder?: string;
   onSubmit: (value: string) => void;
+  onClear?: () => void;
 };
 
-const SingleInputForm = ({ placeholder, onSubmit }: FormProps) => {
+const SingleInputForm = ({ placeholder, onSubmit, onClear }: FormProps) => {
   const [value, setValue] = useState<string>("");
 
-  const handleClear = () => setValue("");
+  const handleClear = () => {
+    setValue("");
+    if (onClear) {
+      onClear();
+    }
+  };
 
   return (
     <form

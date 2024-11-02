@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "@/components/Footer";
+import { SpotifyProvider } from "@/components/SpotifyContext";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,11 +15,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="flex flex-col min-h-screen">
-        <main>{children}</main>
-        <footer className="mt-auto">
-          <Footer />
-        </footer>
+      <body className="flex flex-col min-h-screen bg-gray-50">
+        <SpotifyProvider>
+          <main>{children}</main>
+          <footer className="mt-auto">
+            <Footer />
+          </footer>
+        </SpotifyProvider>
       </body>
     </html>
   );
