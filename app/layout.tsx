@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import { SpotifyProvider } from "@/components/SpotifyContext";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const metadata: Metadata = {
   title: "Diddy Track It?",
@@ -23,6 +25,7 @@ export default function RootLayout({
             <Footer />
           </footer>
         </SpotifyProvider>
+        <ToastContainer />
       </body>
     </html>
   );

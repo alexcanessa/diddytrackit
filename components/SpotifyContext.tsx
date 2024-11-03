@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "react-toastify";
 
 interface Track {
   title: string;
@@ -54,6 +55,7 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
     "user-read-email",
     "user-read-private",
   ];
+
   const fetchDiddyScore = useCallback(async (spotifyUrl: string) => {
     try {
       const response = await fetch(`/api/diddymeter`, {
@@ -73,10 +75,9 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
       return null;
     }
   }, []);
+
   const fetchCurrentlyPlaying = useCallback(async () => {
-    if (!accessToken) {
-      return;
-    }
+    if (!accessToken) return;
 
     try {
       const response = await fetch(
@@ -86,7 +87,14 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       );
 
+      if (response.status === 403) {
+        toast.error("Access denied. Please log in again.");
+        logout();
+        return;
+      }
+
       if (!response.ok) {
+        toast.warn("Unable to fetch currently playing track.");
         setCurrentlyPlaying(null);
         return;
       }
@@ -104,6 +112,7 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
         setCurrentlyPlaying(null);
         return;
       }
+
       const {
         name,
         artists,
@@ -116,6 +125,7 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
       if (external_ids?.isrc === lastCheckedISRC) {
         return;
       }
+
       const diddyScore = await fetchDiddyScore(href);
 
       setCurrentlyPlaying({
@@ -129,6 +139,9 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
       setLastCheckedISRC(external_ids.isrc || null);
     } catch (error) {
       console.error("Error fetching currently playing track:", error);
+      toast.error(
+        "An error occurred while fetching the currently playing track."
+      );
     }
   }, [accessToken, fetchDiddyScore, lastCheckedISRC]);
 
@@ -156,13 +169,13 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
       const interval = setInterval(
         fetchCurrentlyPlaying,
         CURRENTLY_PLAYING_POLL_INTERVAL
-      ); // Poll every 15 seconds
+      );
 
       return () => clearInterval(interval);
     }
   }, [accessToken, fetchCurrentlyPlaying]);
 
-  // Fetch user profile picture
+  // Fetch user profile picture and display welcome message
   useEffect(() => {
     if (accessToken) {
       const fetchUserProfile = async () => {
@@ -174,11 +187,15 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
             const data = await response.json();
             setUserId(data.id);
             setProfilePic(data.images[0]?.url || null);
+            toast.success(
+              `Welcome ${data.display_name}! Now you can play songs in Spotify and check their score here.`
+            );
           } else {
             setProfilePic(null);
           }
         } catch (error) {
           console.error("Error fetching user profile:", error);
+          toast.error("An error occurred while fetching your profile.");
         }
       };
       fetchUserProfile();

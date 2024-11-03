@@ -18,17 +18,16 @@ const Footer = () => {
             alexcanessa
           </a>
         </span>
-        <span>-</span>
         <a
           href="https://buymeacoffee.com/alexcanessa"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-yellow-600 text-yellow-500 ml-1 flex space-x-2 items-center"
         >
-          <span>buy me a</span>
           <span className="w-5 block">
             <BuyMeACoffee />
           </span>
+          <span>help the project</span>
         </a>
       </div>
     </footer>
