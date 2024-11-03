@@ -52,6 +52,12 @@ const BLACKLIST: BlacklistItem[] = [
     score: SCORE_PER_ROLE.label,
   },
   {
+    id: "ba4b8ffa-d518-4f75-b0c1-659472cf0a9d",
+    name: "Love Label",
+    type: "label",
+    score: SCORE_PER_ROLE.label,
+  },
+  {
     id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
     name: "Diddy",
     type: "artist",
@@ -92,6 +98,30 @@ const BLACKLIST: BlacklistItem[] = [
     name: "Diddy",
     type: "default",
     score: SCORE_PER_ROLE.default,
+  },
+  {
+    id: "2072f699-049a-4b78-b039-317a1c7cff94",
+    name: "Diddy and the Family",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "c9ba7b22-51bd-4beb-affd-9bf682479f41",
+    name: "Bugatti Boyz",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "480cdd78-e54e-4518-9ec9-572a62d7e1e1",
+    name: "Diddy - Dirty Money",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "3195aa16-a32e-4fde-8dd2-1bdf021ed3ca",
+    name: "Three The...",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
   },
 ];
 
