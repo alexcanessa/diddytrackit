@@ -187,9 +187,6 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
             const data = await response.json();
             setUserId(data.id);
             setProfilePic(data.images[0]?.url || null);
-            toast.success(
-              `Welcome ${data.display_name}! Now you can play songs in Spotify and check their score here.`
-            );
           } else {
             setProfilePic(null);
           }
@@ -207,33 +204,41 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get("code");
 
-    if (authCode) {
-      localStorage.setItem("spotifyAuthCode", authCode);
-
-      fetch("/api/spotify-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: authCode }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.user_id && data.access_token) {
-            setUserId(data.user_id);
-            setAccessToken(data.access_token);
-            localStorage.setItem("spotifyUserId", data.user_id);
-            localStorage.setItem("spotifyAccessToken", data.access_token);
-            window.history.replaceState({}, document.title, "/");
-          }
-        })
-        .catch((error) =>
-          console.error("Spotify authentication failed:", error)
-        );
-    } else {
+    if (!authCode) {
       setUserId(localStorage.getItem("spotifyUserId"));
       setAccessToken(localStorage.getItem("spotifyAccessToken"));
+
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(false);
+    localStorage.setItem("spotifyAuthCode", authCode);
+
+    fetch("/api/spotify-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: authCode }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!(data.user_id && data.access_token)) {
+          throw new Error("Invalid response from API");
+        }
+
+        setUserId(data.user_id);
+        setAccessToken(data.access_token);
+        localStorage.setItem("spotifyUserId", data.user_id);
+        localStorage.setItem("spotifyAccessToken", data.access_token);
+        window.history.replaceState({}, document.title, "/");
+        toast.success(
+          `Welcome ${data.display_name}! Now you can play songs in Spotify and check their score here.`
+        );
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        toast.error("An error occurred while logging in.");
+        console.error("Spotify authentication failed:", error);
+      });
   }, []);
 
   return (

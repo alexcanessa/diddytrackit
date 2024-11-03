@@ -64,7 +64,7 @@ function Results({ data }: { data: Partial<ResponseData> }) {
   );
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto px-4">
       <div className="text-center mb-8">
         <ScoreMeter score={totalScore} totalTracks={count} />
         <p className="text-gray-600">

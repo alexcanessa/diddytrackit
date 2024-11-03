@@ -43,6 +43,7 @@ const TrackDetails = ({ track }: { track: CompleteTrackInfo }) => {
       className={`p-4 border rounded-lg ${hasScore ? "border-indigo-500" : "border-gray-300"}`}
     >
       <h3 className="text-xl font-semibold">{title}</h3>
+      <p className="text-gray-700">{track.artists.join(", ")}</p>
       <p className="text-gray-500">
         {album} - {release_date}
       </p>

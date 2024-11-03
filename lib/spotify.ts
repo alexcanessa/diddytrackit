@@ -5,6 +5,7 @@ export type SpotifyTrackInfo = {
   SID: string;
   isrc?: string;
   album: string;
+  artists: string[];
   release_date: string;
 };
 
@@ -41,6 +42,7 @@ function mapTrackToSpotifyTrackInfo(track: Track): SpotifyTrackInfo {
     SID: track.id,
     isrc: track.external_ids?.isrc,
     album: track.album.name,
+    artists: track.artists.map((artist) => artist.name),
     release_date: track.album.release_date,
   };
 }

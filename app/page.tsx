@@ -17,6 +17,10 @@ import Loading from "@/components/Loading";
 
 type SubmitState = "none" | "loading" | "success" | "error";
 
+const Separator = () => {
+  return <div className="my-4 text-gray-600 text-2xl text-center">•</div>;
+};
+
 export default function Home() {
   const [submitState, setSubmitState] = useState<SubmitState>("none");
   const [results, setResults] = useState<CompleteTrackInfo[]>([]);
@@ -149,21 +153,24 @@ export default function Home() {
             </>
           ) : (
             <>
-              <div className="my-4 text-gray-600 text-2xl">•</div>
+              <Separator />
               <CurrentlyPlaying />
             </>
           ))}
       </div>
 
-      <div className="mt-10">
-        <div className="max-w-xl mx-auto">
-          {submitState === "loading" && <Loading progress={progress} />}
-        </div>
-        {submitState === "success" && <ResultsSection results={results} />}
-        {submitState === "error" && errorMessage && (
-          <p className="text-center mt-8 text-red-500">{errorMessage}</p>
-        )}
-      </div>
+      {submitState !== "none" && (
+        <>
+          <Separator />
+          <div className="max-w-xl mx-auto">
+            {submitState === "loading" && <Loading progress={progress} />}
+            {submitState === "success" && <ResultsSection results={results} />}
+            {submitState === "error" && errorMessage && (
+              <p className="text-center mt-8 text-red-500">{errorMessage}</p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
