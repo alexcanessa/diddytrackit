@@ -35,6 +35,7 @@ export default async function handler(
     res.status(200).json({
       access_token: data.access_token,
       user_id: userData.id,
+      user_name: userData.display_name,
     });
   } else {
     res.status(400).json({ error: "Spotify authorization failed" });

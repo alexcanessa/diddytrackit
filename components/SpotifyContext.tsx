@@ -24,6 +24,7 @@ interface SpotifyContextProps {
 }
 
 const CURRENTLY_PLAYING_POLL_INTERVAL = 5000;
+const BASE_URL = "https://api.spotify.com/v1";
 const SpotifyContext = createContext<SpotifyContextProps | undefined>(
   undefined
 );
@@ -77,14 +78,11 @@ const fetchCurrentlyPlaying = async (
   if (!accessToken) return;
 
   try {
-    const response = await fetch(
-      "https://api.spotify.com/v1/me/player/currently-playing",
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
+    const response = await fetch(`${BASE_URL}/me/player/currently-playing`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-    if (response.status === 403) {
+    if (response.status === 403 || response.status === 401) {
       handleLogout();
       return;
     }
@@ -146,7 +144,7 @@ const fetchUserProfile = async (
   if (!accessToken) return;
 
   try {
-    const response = await fetch("https://api.spotify.com/v1/me", {
+    const response = await fetch(`${BASE_URL}/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
@@ -188,8 +186,9 @@ const initializeAuth = async (
     });
     const data = await response.json();
 
-    if (!data.user_id || !data.access_token)
+    if (!data.user_id || !data.access_token) {
       throw new Error("Invalid response from API");
+    }
 
     setUserId(data.user_id);
     setAccessToken(data.access_token);
@@ -198,7 +197,7 @@ const initializeAuth = async (
     window.history.replaceState({}, document.title, "/");
 
     toast.success(
-      `Welcome ${data.user_id}! Now you can play songs in Spotify and check their score here.`
+      `Welcome ${data.user_name}! Now you can play songs in Spotify and check their score here.`
     );
   } catch (error) {
     console.error("Spotify authentication failed:", error);
