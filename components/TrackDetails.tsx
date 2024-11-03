@@ -40,7 +40,7 @@ const TrackDetails = ({ track }: { track: CompleteTrackInfo }) => {
 
   return (
     <div
-      className={`p-4 border rounded-lg ${hasScore ? "border-indigo-500" : "border-gray-300"}`}
+      className={`p-4 border rounded-lg ${hasScore ? "border-red-600" : "border-gray-300"}`}
     >
       <h3 className="text-xl font-semibold">{title}</h3>
       <p className="text-gray-700">{track.artists.join(", ")}</p>
@@ -50,9 +50,6 @@ const TrackDetails = ({ track }: { track: CompleteTrackInfo }) => {
 
       {hasScore && (
         <div className="mt-2">
-          <p className="text-lg font-bold text-indigo-600">
-            Score: {score.score}
-          </p>
           <ul className="mt-2 space-y-1">
             {score.score_details.map((detail, index) => (
               <li
@@ -60,9 +57,7 @@ const TrackDetails = ({ track }: { track: CompleteTrackInfo }) => {
                 className="flex items-center space-x-2 text-gray-700"
               >
                 <InvolvementIcon type={detail.type} />
-                <span>
-                  {detail.reason} (+{detail.score})
-                </span>
+                <span>{detail.reason}</span>
               </li>
             ))}
           </ul>

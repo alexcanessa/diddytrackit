@@ -31,15 +31,17 @@ function getMessageBasedOnScore(
 }
 
 function ScoreMeter({
+  children,
   score,
   totalTracks,
 }: {
+  children: React.ReactNode;
   score: number;
   totalTracks: number;
 }) {
   const scoreColor = getScoreColor(score, totalTracks);
   return (
-    <h2 className={`text-3xl font-bold ${scoreColor}`}>Diddy Score: {score}</h2>
+    <p className={`text-xl font-semibold mt-4 ${scoreColor}`}>{children}</p>
   );
 }
 
@@ -66,12 +68,11 @@ function Results({ data }: { data: Partial<ResponseData> }) {
   return (
     <div className="container mx-auto px-4">
       <div className="text-center mb-8">
-        <ScoreMeter score={totalScore} totalTracks={count} />
+        <ScoreMeter score={totalScore} totalTracks={count}>
+          {userMessage}
+        </ScoreMeter>
         <p className="text-gray-600">
           {message} ({tracks.length}/{count} tracks analysed)
-        </p>
-        <p className="text-xl font-semibold mt-4 text-gray-800">
-          {userMessage}
         </p>
       </div>
 

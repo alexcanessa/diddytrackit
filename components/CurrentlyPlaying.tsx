@@ -6,6 +6,26 @@ import { InvolvementIcon } from "./TrackDetails";
 const boxClasses =
   "flex flex-col text-left items-start justify-center p-4 rounded-lg shadow-lg bg-white max-w-md mx-auto border border-gray-200";
 
+const getScoreLabel = (score: number): string => {
+  if (score === 0) {
+    return "Zero!";
+  }
+
+  if (score < 10) {
+    return "Low";
+  }
+
+  if (score < 25) {
+    return "Medium";
+  }
+
+  if (score <= 50) {
+    return "High";
+  }
+
+  return "Very High";
+};
+
 const CurrentlyPlaying = () => {
   const { currentlyPlaying } = useSpotify();
 
@@ -54,13 +74,13 @@ const CurrentlyPlaying = () => {
                   <span className="mt-1">
                     <InvolvementIcon type={detail.type} />
                   </span>
-                  <span>{`${detail.reason} (+${detail.score})`}</span>
+                  <span>{detail.reason}</span>
                 </li>
               ))}
             </ul>
           )}
 
-          <div className="text-right">
+          <div className="text-right mt-2">
             <span
               className={`text-sm font-semibold py-1 px-2 rounded-md ${
                 currentlyPlaying.score?.score > 0
@@ -68,7 +88,7 @@ const CurrentlyPlaying = () => {
                   : "bg-green-500 text-white"
               }`}
             >
-              Diddy Score: {currentlyPlaying.score?.score || "0"}
+              Diddy score: {getScoreLabel(currentlyPlaying.score?.score || 0)}
             </span>
           </div>
         </div>

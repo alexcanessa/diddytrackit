@@ -1,13 +1,7 @@
 "use client";
 
 import { FinalScore } from "@/lib/diddymeter";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 interface Track {
@@ -30,10 +24,187 @@ interface SpotifyContextProps {
 }
 
 const CURRENTLY_PLAYING_POLL_INTERVAL = 5000;
-
 const SpotifyContext = createContext<SpotifyContextProps | undefined>(
   undefined
 );
+
+const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
+const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
+const RESPONSE_TYPE = "code";
+const SCOPES = [
+  "user-read-currently-playing",
+  "user-read-playback-state",
+  "user-read-email",
+  "user-read-private",
+];
+
+// Helper functions
+const buildAuthUrl = () =>
+  `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
+    REDIRECT_URI || ""
+  )}&response_type=${RESPONSE_TYPE}&scope=${SCOPES.join("%20")}`;
+
+const fetchDiddyScore = async (spotifyUrl: string) => {
+  try {
+    const response = await fetch(`/api/diddymeter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spotifyUrl }),
+    });
+    const data = await response.json();
+    return { score: data.tracks[0].score };
+  } catch (error) {
+    console.error("Error fetching Diddy score:", error);
+    return null;
+  }
+};
+
+const handleLogout = () => {
+  localStorage.removeItem("spotifyAuthCode");
+  localStorage.removeItem("spotifyUserId");
+  localStorage.removeItem("spotifyAccessToken");
+  toast.error("You need to log in again.");
+  window.location.href = "/";
+};
+
+const fetchCurrentlyPlaying = async (
+  accessToken: string | null,
+  lastCheckedISRC: string | null,
+  setCurrentlyPlaying: (track: Track | null) => void,
+  setLastCheckedISRC: (isrc: string | null) => void
+) => {
+  if (!accessToken) return;
+
+  try {
+    const response = await fetch(
+      "https://api.spotify.com/v1/me/player/currently-playing",
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    if (response.status === 403) {
+      handleLogout();
+      return;
+    }
+
+    if (!response.ok) {
+      toast.warn("Unable to fetch currently playing track.");
+      setCurrentlyPlaying(null);
+      return;
+    }
+
+    const text = await response.text();
+
+    if (!text) {
+      setCurrentlyPlaying(null);
+      return;
+    }
+
+    const data = JSON.parse(text);
+    if (!data.item) {
+      setCurrentlyPlaying(null);
+      return;
+    }
+
+    const {
+      name,
+      artists,
+      album,
+      is_playing,
+      external_ids,
+      external_urls: { spotify: href },
+    } = data.item;
+
+    if (external_ids?.isrc === lastCheckedISRC) return;
+
+    const diddyScore = await fetchDiddyScore(href);
+
+    setCurrentlyPlaying({
+      title: name,
+      artist: artists[0].name,
+      album: album.name,
+      isPlaying: is_playing,
+      isrc: external_ids.isrc,
+      score: diddyScore?.score,
+    });
+    setLastCheckedISRC(external_ids.isrc || null);
+  } catch (error) {
+    console.error("Error fetching currently playing track:", error);
+    toast.error(
+      "An error occurred while fetching the currently playing track."
+    );
+  }
+};
+
+const fetchUserProfile = async (
+  accessToken: string | null,
+  setUserId: (id: string | null) => void,
+  setProfilePic: (url: string | null) => void
+) => {
+  if (!accessToken) return;
+
+  try {
+    const response = await fetch("https://api.spotify.com/v1/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      setProfilePic(null);
+      return;
+    }
+
+    const data = await response.json();
+    setUserId(data.id);
+    setProfilePic(data.images[0]?.url || null);
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    toast.error("An error occurred while fetching your profile.");
+  }
+};
+
+const initializeAuth = async (
+  setUserId: (id: string | null) => void,
+  setAccessToken: (token: string | null) => void
+) => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const authCode = urlParams.get("code");
+
+  if (!authCode) {
+    setUserId(localStorage.getItem("spotifyUserId"));
+    setAccessToken(localStorage.getItem("spotifyAccessToken"));
+
+    return;
+  }
+
+  localStorage.setItem("spotifyAuthCode", authCode);
+
+  try {
+    const response = await fetch("/api/spotify-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: authCode }),
+    });
+    const data = await response.json();
+
+    if (!data.user_id || !data.access_token)
+      throw new Error("Invalid response from API");
+
+    setUserId(data.user_id);
+    setAccessToken(data.access_token);
+    localStorage.setItem("spotifyUserId", data.user_id);
+    localStorage.setItem("spotifyAccessToken", data.access_token);
+    window.history.replaceState({}, document.title, "/");
+
+    toast.success(
+      `Welcome ${data.user_id}! Now you can play songs in Spotify and check their score here.`
+    );
+  } catch (error) {
+    console.error("Spotify authentication failed:", error);
+    toast.error("An error occurred while logging in.");
+  }
+};
 
 export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -45,201 +216,43 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
   const [lastCheckedISRC, setLastCheckedISRC] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
-  const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
-  const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
-  const RESPONSE_TYPE = "code";
-  const SCOPES = [
-    "user-read-currently-playing",
-    "user-read-playback-state",
-    "user-read-email",
-    "user-read-private",
-  ];
+  const login = () => {
+    window.location.href = buildAuthUrl();
+  };
 
-  const fetchDiddyScore = useCallback(async (spotifyUrl: string) => {
-    try {
-      const response = await fetch(`/api/diddymeter`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ spotifyUrl }),
-      });
-      const data = await response.json();
-
-      return {
-        score: data.tracks[0].score,
-      };
-    } catch (error) {
-      console.error("Error fetching Diddy score:", error);
-      return null;
-    }
+  useEffect(() => {
+    setIsLoading(true);
+    initializeAuth(setUserId, setAccessToken).then(() => {
+      setIsLoading(false);
+    });
   }, []);
 
-  const fetchCurrentlyPlaying = useCallback(async () => {
-    if (!accessToken) return;
-
-    try {
-      const response = await fetch(
-        "https://api.spotify.com/v1/me/player/currently-playing",
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-
-      if (response.status === 403) {
-        toast.error("Access denied. Please log in again.");
-        logout();
-        return;
-      }
-
-      if (!response.ok) {
-        toast.warn("Unable to fetch currently playing track.");
-        setCurrentlyPlaying(null);
-        return;
-      }
-
-      const text = await response.text();
-
-      if (!text) {
-        setCurrentlyPlaying(null);
-        return;
-      }
-
-      const data = JSON.parse(text);
-
-      if (!data.item) {
-        setCurrentlyPlaying(null);
-        return;
-      }
-
-      const {
-        name,
-        artists,
-        album,
-        is_playing,
-        external_ids,
-        external_urls: { spotify: href },
-      } = data.item;
-
-      if (external_ids?.isrc === lastCheckedISRC) {
-        return;
-      }
-
-      const diddyScore = await fetchDiddyScore(href);
-
-      setCurrentlyPlaying({
-        title: name,
-        artist: artists[0].name,
-        album: album.name,
-        isPlaying: is_playing,
-        isrc: external_ids.isrc,
-        score: diddyScore?.score,
-      });
-      setLastCheckedISRC(external_ids.isrc || null);
-    } catch (error) {
-      console.error("Error fetching currently playing track:", error);
-      toast.error(
-        "An error occurred while fetching the currently playing track."
-      );
-    }
-  }, [accessToken, fetchDiddyScore, lastCheckedISRC]);
-
-  const login = () => {
-    const authUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
-      REDIRECT_URI || ""
-    )}&response_type=${RESPONSE_TYPE}&scope=${SCOPES.join("%20")}`;
-    window.location.href = authUrl;
-  };
-
-  const logout = () => {
-    localStorage.removeItem("spotifyAuthCode");
-    localStorage.removeItem("spotifyUserId");
-    localStorage.removeItem("spotifyAccessToken");
-    setUserId(null);
-    setAccessToken(null);
-    setCurrentlyPlaying(null);
-    setProfilePic(null);
-    window.location.href = "/";
-  };
-
   useEffect(() => {
     if (accessToken) {
-      fetchCurrentlyPlaying();
-      const interval = setInterval(
-        fetchCurrentlyPlaying,
-        CURRENTLY_PLAYING_POLL_INTERVAL
-      );
-
-      return () => clearInterval(interval);
-    }
-  }, [accessToken, fetchCurrentlyPlaying]);
-
-  // Fetch user profile picture and display welcome message
-  useEffect(() => {
-    if (accessToken) {
-      const fetchUserProfile = async () => {
-        try {
-          const response = await fetch("https://api.spotify.com/v1/me", {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setUserId(data.id);
-            setProfilePic(data.images[0]?.url || null);
-          } else {
-            setProfilePic(null);
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-          toast.error("An error occurred while fetching your profile.");
-        }
-      };
-      fetchUserProfile();
+      fetchUserProfile(accessToken, setUserId, setProfilePic);
     }
   }, [accessToken]);
 
   useEffect(() => {
-    setIsLoading(true);
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get("code");
-
-    if (!authCode) {
-      setUserId(localStorage.getItem("spotifyUserId"));
-      setAccessToken(localStorage.getItem("spotifyAccessToken"));
-
-      setIsLoading(false);
-      return;
-    }
-
-    localStorage.setItem("spotifyAuthCode", authCode);
-
-    fetch("/api/spotify-token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: authCode }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (!(data.user_id && data.access_token)) {
-          throw new Error("Invalid response from API");
-        }
-
-        setUserId(data.user_id);
-        setAccessToken(data.access_token);
-        localStorage.setItem("spotifyUserId", data.user_id);
-        localStorage.setItem("spotifyAccessToken", data.access_token);
-        window.history.replaceState({}, document.title, "/");
-        toast.success(
-          `Welcome ${data.display_name}! Now you can play songs in Spotify and check their score here.`
+    if (accessToken) {
+      fetchCurrentlyPlaying(
+        accessToken,
+        lastCheckedISRC,
+        setCurrentlyPlaying,
+        setLastCheckedISRC
+      );
+      const interval = setInterval(() => {
+        fetchCurrentlyPlaying(
+          accessToken,
+          lastCheckedISRC,
+          setCurrentlyPlaying,
+          setLastCheckedISRC
         );
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        toast.error("An error occurred while logging in.");
-        console.error("Spotify authentication failed:", error);
-      });
-  }, []);
+      }, CURRENTLY_PLAYING_POLL_INTERVAL);
+
+      return () => clearInterval(interval);
+    }
+  }, [accessToken, lastCheckedISRC]);
 
   return (
     <SpotifyContext.Provider
@@ -250,7 +263,7 @@ export const SpotifyProvider: React.FC<{ children: React.ReactNode }> = ({
         profilePic,
         currentlyPlaying,
         login,
-        logout,
+        logout: handleLogout,
       }}
     >
       {children}
