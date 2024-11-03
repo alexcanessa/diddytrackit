@@ -46,6 +46,18 @@ export const SCORE_PER_ROLE: Record<string, number> = {
 // Consolidated blacklist with roles and scores
 const BLACKLIST: BlacklistItem[] = [
   {
+    id: "61063817-feda-4d21-8ae5-e488e7632eea",
+    name: "Bad Boy South",
+    type: "label",
+    score: SCORE_PER_ROLE.label,
+  },
+  {
+    id: "29d43312-a8ed-4d7b-9f4e-f5650318aebb",
+    name: "Bad Boy Records",
+    type: "label",
+    score: SCORE_PER_ROLE.label,
+  },
+  {
     id: "635b9d63-05c1-46ff-a577-0ce030e6e84b",
     name: "Bad Boy Entertainment",
     type: "label",
