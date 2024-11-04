@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import { SpotifyProvider } from "@/components/SpotifyContext";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { BurgerMenuProvider, BurgerMenuWindow } from "@/components/BurgerMenu";
 
 export const metadata: Metadata = {
   title: "Diddy Track It?",
@@ -20,10 +21,18 @@ export default function RootLayout({
     <html lang="en">
       <body className="flex flex-col min-h-screen bg-gray-50">
         <SpotifyProvider>
-          <main>{children}</main>
-          <footer className="mt-auto">
-            <Footer />
-          </footer>
+          <BurgerMenuProvider>
+            <BurgerMenuWindow
+              menuItems={[
+                { label: "Diddy Track It?", href: "/" },
+                { label: "Diddy Do It?", href: "/involvement" },
+              ]}
+            />
+            <main>{children}</main>
+            <footer className="mt-auto">
+              <Footer />
+            </footer>
+          </BurgerMenuProvider>
         </SpotifyProvider>
         <ToastContainer />
       </body>
