@@ -63,7 +63,7 @@ const getHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     res.status(200).json(sortedPeople);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to retrieve data" });
   }
 };
@@ -96,7 +96,7 @@ const postHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     res.status(201).json(person);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to create person" });
   }
 };
@@ -124,7 +124,7 @@ const putHandler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     res.status(200).json(person);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to update person" });
   }
 };
@@ -140,7 +140,7 @@ const deleteHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     await prisma.person.delete({ where: { id: parseInt(id) } });
     res.status(204).end();
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to delete person" });
   }
 };
