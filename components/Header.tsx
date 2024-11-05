@@ -10,11 +10,11 @@ export interface HeaderProps {
 const Header = ({ title, layout = "default" }: HeaderProps) => {
   return (
     <div
-      className={classnames("header", {
+      className={classnames("header relative", {
         "header--slim": layout === "slim",
       })}
     >
-      <div className="absolute p-6 top-0 right-0 left-0 flex justify-between">
+      <div className="absolute p-7 top-0 right-0 left-0 flex justify-between items-center">
         <BurgerMenuTrigger />
         <SpotifyHeader />
       </div>
