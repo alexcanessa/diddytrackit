@@ -14,6 +14,7 @@ import { useCallback, useState } from "react";
 import { CompleteTrackInfo } from "@/lib/trackinfo";
 import { ResponseData } from "@/pages/api/diddymeter";
 import Loading from "@/components/Loading";
+import Link from "next/link";
 
 type SubmitState = "none" | "loading" | "success" | "error";
 
@@ -64,7 +65,7 @@ export default function Home() {
       hasMore = true;
 
       while (hasMore) {
-        const maxProgress = (page / totalBatches) * 100;
+        const maxProgress = Math.max((page / totalBatches) * 100, 99);
 
         // Fake loading within min and max range for the current batch
         const fakeProgressInterval = setInterval(() => {
@@ -124,9 +125,12 @@ export default function Home() {
       <p className="text-center px-8 text-lg">
         See how likely it is that Diddy is cashing in on your Spotify tracks.
       </p>
-      <p className="text-center mb-9 text-gray-600 text-sm">
-        Diddy is just the start - when other names come up, we will keep the
-        list updated.
+      <p className="text-center mb-9 px-8 text-gray-600 text-sm">
+        Diddy is just the start - when other names come up, we will keep{" "}
+        <Link href="/involvement" className="text-[#803977] underline">
+          the list
+        </Link>{" "}
+        updated.
       </p>
 
       <div className="flex flex-col items-center justify-center mx-auto max-w-[500px] px-5">

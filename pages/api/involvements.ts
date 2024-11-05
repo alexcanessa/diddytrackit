@@ -1,4 +1,6 @@
 // pages/api/list.ts
+import withCacheAndLimit from "@/lib/cache";
+import axios from "axios";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export type InvolvementType =
@@ -12,12 +14,39 @@ export interface Person {
   name: string;
   involvementType: InvolvementType;
   details: string;
-  imageUrl?: string;
+  imageUrl: string | null;
 }
 
-const involvementData: Person[] = [
+type Thumbnail = {
+  source: string;
+  width: number;
+  height: number;
+};
+
+type WikiImageResponse = {
+  batchcomplete: string;
+  query: {
+    normalized?: Array<{
+      from: string;
+      to: string;
+    }>;
+    pages: {
+      [key: string]: {
+        pageid: number;
+        ns: number;
+        title: string;
+        thumbnail?: Thumbnail;
+        pageimage?: string;
+      };
+    };
+  };
+};
+
+const WIKI_BASE_URL = "https://en.wikipedia.org/w/api.php";
+
+const involvementData: Omit<Person, "imageUrl">[] = [
   {
-    name: "Sean 'Diddy' Combs",
+    name: "Sean Combs",
     involvementType: "accused",
     details:
       "Facing multiple allegations including sexual assault, sex trafficking, racketeering, and abuse of various individuals over decades.",
@@ -47,7 +76,7 @@ const involvementData: Person[] = [
       "Diddy's son, alleged to have solicited sex workers, witnessed abusive incidents, and engaged in incidents involving firearms.",
   },
   {
-    name: "Jacob Arabo (Jacob the Jeweler)",
+    name: "Jacob Arabo",
     involvementType: "accused",
     details:
       "Accused by Adria English of non-consensual acts at Combs' parties, allegedly organized by Combs.",
@@ -126,9 +155,37 @@ const involvementData: Person[] = [
   },
 ];
 
-export default function handler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Person[]>
 ) {
-  res.status(200).json(involvementData);
+  const involvementDataWithPics = await Promise.all(
+    involvementData.map<Promise<Person>>(async ({ name, ...rest }) => {
+      const wikiProfile = await withCacheAndLimit<Partial<Thumbnail>>(
+        "profile_pic:" + name.toLowerCase().replace(/s/g, "_"),
+        async () => {
+          try {
+            const response = await axios.get<WikiImageResponse>(
+              `${WIKI_BASE_URL}?action=query&titles=${encodeURIComponent(name)}&prop=pageimages&format=json&pithumbsize=500`
+            );
+
+            const { thumbnail } =
+              Object.values(response.data.query.pages)[0] || {};
+
+            return thumbnail || {};
+          } catch {
+            return {};
+          }
+        }
+      );
+
+      return {
+        name,
+        imageUrl: wikiProfile.source || null,
+        ...rest,
+      };
+    })
+  );
+
+  res.status(200).json(involvementDataWithPics);
 }

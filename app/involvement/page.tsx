@@ -8,6 +8,7 @@ import PersonCard, {
   InvolvementType,
   involvementTypes,
 } from "@/components/PersonCard";
+import { FaCompactDisc } from "react-icons/fa";
 
 type InvolvementCounts = Record<InvolvementType, number>;
 
@@ -15,6 +16,7 @@ export default function InvolvementPage() {
   const [selectedTypes, setSelectedTypes] = useState<InvolvementType[]>([]);
   const [peopleData, setPeopleData] = useState<Person[]>([]);
   const [filteredPeople, setFilteredPeople] = useState<Person[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Count the occurrences of each involvement type in the data
   const involvementCounts = useMemo(() => {
@@ -57,6 +59,7 @@ export default function InvolvementPage() {
 
   useEffect(() => {
     const fetchPeopleData = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch("/api/involvements");
         const data: Person[] = await response.json();
@@ -65,6 +68,7 @@ export default function InvolvementPage() {
       } catch (error) {
         console.error("Error fetching data:", error);
       }
+      setIsLoading(false);
     };
 
     fetchPeopleData();
@@ -94,11 +98,15 @@ export default function InvolvementPage() {
           );
         })}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 max-w-5xl">
-        {filteredPeople.map((person) => (
-          <PersonCard key={person.name.toLowerCase()} person={person} />
-        ))}
-      </div>
+      {isLoading ? (
+        <FaCompactDisc className="animate-spin text-[#4a306d] text-4xl mx-auto my-2 block" />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 max-w-5xl mx-auto">
+          {filteredPeople.map((person) => (
+            <PersonCard key={person.name.toLowerCase()} person={person} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
