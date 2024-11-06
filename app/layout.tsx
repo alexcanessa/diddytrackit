@@ -5,6 +5,7 @@ import "./globals.css";
 import Footer from "@/components/Footer";
 import { SpotifyProvider } from "@/components/SpotifyContext";
 import { BurgerMenuProvider, BurgerMenuWindow } from "@/components/BurgerMenu";
+import InstallPrompt from "@/components/InstallPrompt";
 
 export const metadata: Metadata = {
   title: "Diddy Track It?",
@@ -34,6 +35,7 @@ export default function RootLayout({
             </footer>
           </BurgerMenuProvider>
         </SpotifyProvider>
+        <InstallPrompt />
         <ToastContainer />
       </body>
     </html>
