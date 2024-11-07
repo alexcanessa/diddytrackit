@@ -1,12 +1,10 @@
-import { TrackDetails } from "./musicbrainzTypes";
-import { SpotifyTrackInfo } from "./spotify";
+import { DiscogsTrackDetails } from "@/lib/discogs";
+import { SpotifyTrackInfo } from "@/lib/spotify";
 
 type Entity = {
   id: string;
   name: string;
 };
-
-type TrackData = TrackDetails;
 
 type BlacklistItem = Entity & {
   type:
@@ -32,178 +30,51 @@ export type FinalScore = {
   score_details: ScoreDetail[];
 };
 
-// Scores for each involvement type, including default for unknown types
-export const SCORE_PER_ROLE: Record<string, number> = {
-  artist: 50,
-  label: 25,
-  producer: 15,
-  composer: 15,
-  mix: 8,
-  vocal: 5,
-  feature: 10,
-  default: 5,
-};
-
-// Consolidated blacklist with roles and scores
+// Consolidated blacklist with scores
 const BLACKLIST: BlacklistItem[] = [
-  {
-    id: "61063817-feda-4d21-8ae5-e488e7632eea",
-    name: "Bad Boy South",
-    type: "label",
-    score: SCORE_PER_ROLE.label,
-  },
-  {
-    id: "29d43312-a8ed-4d7b-9f4e-f5650318aebb",
-    name: "Bad Boy Records",
-    type: "label",
-    score: SCORE_PER_ROLE.label,
-  },
-  {
-    id: "635b9d63-05c1-46ff-a577-0ce030e6e84b",
-    name: "Bad Boy Entertainment",
-    type: "label",
-    score: SCORE_PER_ROLE.label,
-  },
-  {
-    id: "ba4b8ffa-d518-4f75-b0c1-659472cf0a9d",
-    name: "Love Label",
-    type: "label",
-    score: SCORE_PER_ROLE.label,
-  },
-  {
-    id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
-    name: "Diddy",
-    type: "artist",
-    score: SCORE_PER_ROLE.artist,
-  },
-  {
-    id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
-    name: "Diddy",
-    type: "feature",
-    score: SCORE_PER_ROLE.feature,
-  },
-  {
-    id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
-    name: "Diddy",
-    type: "producer",
-    score: SCORE_PER_ROLE.producer,
-  },
-  {
-    id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
-    name: "Diddy",
-    type: "mix",
-    score: SCORE_PER_ROLE.mix,
-  },
-  {
-    id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
-    name: "Diddy",
-    type: "vocal",
-    score: SCORE_PER_ROLE.vocal,
-  },
-  {
-    id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
-    name: "Diddy",
-    type: "composer",
-    score: SCORE_PER_ROLE.composer,
-  },
-  {
-    id: "cabb4fcf-4067-4ba5-908d-76ee66fcf0c6",
-    name: "Diddy",
-    type: "default",
-    score: SCORE_PER_ROLE.default,
-  },
-  {
-    id: "2072f699-049a-4b78-b039-317a1c7cff94",
-    name: "Diddy and the Family",
-    type: "artist",
-    score: SCORE_PER_ROLE.artist,
-  },
-  {
-    id: "c9ba7b22-51bd-4beb-affd-9bf682479f41",
-    name: "Bugatti Boyz",
-    type: "artist",
-    score: SCORE_PER_ROLE.artist,
-  },
-  {
-    id: "480cdd78-e54e-4518-9ec9-572a62d7e1e1",
-    name: "Diddy - Dirty Money",
-    type: "artist",
-    score: SCORE_PER_ROLE.artist,
-  },
-  {
-    id: "3195aa16-a32e-4fde-8dd2-1bdf021ed3ca",
-    name: "Three The...",
-    type: "artist",
-    score: SCORE_PER_ROLE.artist,
-  },
+  { id: "173538", name: "Diddy", type: "artist", score: 25 },
 ];
 
-type MessageTemplate = (name: string, type: string) => string;
-type ContributionType =
-  | "artist"
-  | "producer"
-  | "composer"
-  | "mix"
-  | "vocal"
-  | "feature"
-  | "label"
-  | "default";
-
-const typeToMessage: Record<ContributionType, MessageTemplate> = {
-  artist: (name) => `${name} is the main artist of this track`,
-  feature: (name) => `${name} is featured on this track`,
-  producer: (name) => `${name} produced this track`,
-  label: (name) => `This track is released under ${name}`,
-  mix: (name) => `${name} mixed this track`,
-  vocal: (name) => `${name} sang on this track`,
-  composer: (name) => `${name} composed the music for this track`,
-  default: (name) => `${name} contributed to this track`,
-};
-
-const defaultMessage: MessageTemplate = (name, type) =>
-  `${name} contributed as ${type}`;
-
-function getContributionMessage(name: string, type: ContributionType): string {
-  return (typeToMessage[type] || defaultMessage)(name, type);
+function getContributionMessage(name: string, type: string): string {
+  return `${name} contributed as ${type}`;
 }
 
-// Reusable function to check and score based on type
+// Helper to generate score details for given entities and type
 const scoreEntities = (
   entities: Entity[],
-  type: ContributionType
+  type: BlacklistItem["type"]
 ): ScoreDetail[] => {
   return entities
     .filter((entity) =>
-      BLACKLIST.some((item) => item.id === entity.id && item.type === type)
+      BLACKLIST.some(
+        (item) => item.id === entity.id.toString() && item.type === type
+      )
     )
-    .map((entity) => {
-      const blacklistItem = BLACKLIST.find(
-        (item) => item.id === entity.id && item.type === type
-      );
-      return {
-        reason: getContributionMessage(
-          blacklistItem?.name ?? entity.name,
-          type
-        ),
-        score: blacklistItem?.score ?? SCORE_PER_ROLE.default,
-        type: type,
-      };
-    });
+    .map((entity) => ({
+      reason: getContributionMessage(entity.name, type),
+      score:
+        BLACKLIST.find(
+          (item) => item.id === entity.id.toString() && item.type === type
+        )?.score || 5,
+      type,
+    }));
 };
 
-// Main scoring function, handling known types and default cases
-export const calculateDiddymeter = (track: TrackData): FinalScore => {
+// Calculates Diddymeter score for Discogs track data
+export const calculateDiddymeter = (track: DiscogsTrackDetails): FinalScore => {
   const scoreDetails: ScoreDetail[] = [
-    ...scoreEntities([track.artist], "artist"),
-    ...scoreEntities(track.features, "feature"),
-    ...scoreEntities(track.producers, "producer"),
-    ...scoreEntities(track.labels, "label"),
-    ...track.involvement.flatMap(({ type, artists }) =>
-      scoreEntities(
-        artists,
-        (SCORE_PER_ROLE[type] ? type : "default") as ContributionType
-      )
+    ...scoreEntities(
+      [{ id: track.artist.id.toString(), name: track.artist.name }],
+      "artist"
     ),
+    ...scoreEntities(
+      track.labels.map((label) => ({
+        id: label.id.toString(),
+        name: label.name,
+      })),
+      "label"
+    ),
+    // Add other roles as needed based on your requirements
   ];
 
   return {
@@ -212,19 +83,20 @@ export const calculateDiddymeter = (track: TrackData): FinalScore => {
   };
 };
 
+// Calculates Diddymeter score using Spotify track info as fallback
 export const calculateDiddymeterFromSpotify = (
   track: SpotifyTrackInfo
 ): FinalScore => {
-  const [mainArtist, ...features] = track.artists;
   const scoreDetails = BLACKLIST.reduce<ScoreDetail[]>((acc, item) => {
-    const isMainArtist = item.name.toLowerCase() === mainArtist.toLowerCase();
-    const isFeature = features.some(
-      (feature) => feature.toLowerCase() === item.name.toLowerCase()
-    );
+    const isMainArtist =
+      item.name.toLowerCase() === track.artists[0].toLowerCase();
+    const isFeature = track.artists
+      .slice(1)
+      .some((artist) => artist.toLowerCase() === item.name.toLowerCase());
 
     if (isMainArtist && item.type === "artist") {
       return acc.concat({
-        reason: getContributionMessage(mainArtist, "artist"),
+        reason: getContributionMessage(track.artists[0], "artist"),
         score: item.score,
         type: "artist",
       });
@@ -241,7 +113,6 @@ export const calculateDiddymeterFromSpotify = (
     return acc;
   }, []);
 
-  // Calculate the total score based on score details
   const finalScore = scoreDetails.reduce(
     (acc, detail) => acc + detail.score,
     0
