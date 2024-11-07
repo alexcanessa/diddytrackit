@@ -6,7 +6,7 @@ export type SpotifyTrackInfo = {
   isrc?: string;
   album: string;
   artists: string[];
-  release_date: string;
+  release_date?: string;
 };
 
 export type SpotifyTracksResponse = {

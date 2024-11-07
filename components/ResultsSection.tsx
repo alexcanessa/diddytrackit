@@ -11,7 +11,7 @@ const ResultsSection = ({ results }: ResultsSectionProps) => (
       tracks: results,
       message: "Tracks successfully retrieved",
       totalScore: results.reduce(
-        (acc, track) => acc + (track?.score.score || 0),
+        (acc, track) => acc + (track?.score?.score || 0),
         0
       ),
       count: results.length,

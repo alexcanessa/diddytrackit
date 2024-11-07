@@ -39,6 +39,7 @@ export default function Home() {
     let hasMore = true;
 
     try {
+      // Initial fetch to determine if we need pagination
       const initialResponse = await fetch("/api/diddymeter", {
         method: "POST",
         headers: {
@@ -54,24 +55,36 @@ export default function Home() {
         return;
       }
 
-      const { totalTracks = 0 }: ResponseData = await initialResponse.json();
-
+      const { totalTracks = 0, tracks: initialTracks = [] }: ResponseData =
+        await initialResponse.json();
       const totalBatches = Math.ceil(totalTracks / limit);
 
-      // Reset progress state for fake loading
-      setResults([]);
-      setProgress(0);
-      page = 1;
-      hasMore = true;
+      // Set initial results and progress from the first response
+      setResults(
+        initialTracks.filter(
+          (track): track is CompleteTrackInfo => track !== null
+        )
+      );
+      setProgress(
+        totalBatches > 1 ? Math.min((page / totalBatches) * 100, 99) : 100
+      );
 
-      while (hasMore) {
+      // If all tracks are fetched in the initial request, we skip further pagination
+      if (totalBatches <= 1) {
+        setSubmitState("success");
+        return;
+      }
+
+      // Continue pagination if there are additional pages
+      while (hasMore && page < totalBatches) {
+        page++;
         const maxProgress = Math.max((page / totalBatches) * 100, 99);
 
-        // Fake loading within min and max range for the current batch
+        // Fake progress within min and max range for current batch
         const fakeProgressInterval = setInterval(() => {
           setProgress((prevProgress) => {
-            const newProgress = prevProgress + Math.random() * 2; // Increment randomly between 0 and 2%
-            return Math.min(newProgress, maxProgress); // Cap progress at max for this batch
+            const newProgress = prevProgress + Math.random() * 2;
+            return Math.min(newProgress, maxProgress);
           });
         }, 300);
 
@@ -94,6 +107,7 @@ export default function Home() {
 
         const data: ResponseData = await response.json();
 
+        // Append new results
         setResults((prevResults) => [
           ...prevResults,
           ...(data.tracks?.filter(
@@ -101,10 +115,8 @@ export default function Home() {
           ) || []),
         ]);
 
-        // Set real progress for the batch and move to the next page
         setProgress(maxProgress);
-        hasMore = data.hasMore || false;
-        page++;
+        hasMore = Boolean(data.hasMore);
       }
 
       setSubmitState("success");

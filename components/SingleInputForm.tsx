@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FiX, FiArrowRight } from "react-icons/fi";
 
 export type FormProps = {
@@ -11,9 +11,12 @@ export type FormProps = {
 
 const SingleInputForm = ({ placeholder, onSubmit, onClear }: FormProps) => {
   const [value, setValue] = useState<string>("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClear = () => {
     setValue("");
+    inputRef.current?.focus();
+
     if (onClear) {
       onClear();
     }
@@ -28,6 +31,7 @@ const SingleInputForm = ({ placeholder, onSubmit, onClear }: FormProps) => {
       }}
     >
       <input
+        ref={inputRef}
         value={value}
         onInput={(e) => setValue(e.currentTarget.value)}
         type="text"

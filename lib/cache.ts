@@ -12,26 +12,52 @@ const limiter = new Bottleneck({
   minTime: 1000, // 1 request per second
 });
 
-export default async function withCacheAndLimit<Type>(
+type CacheFunction<Type> = () => Promise<Type>;
+
+/**
+ * Handles caching. Checks Redis for existing data and stores new data if not present.
+ */
+export async function withCache<Type>(
   key: string,
-  callback: () => Promise<Type>
+  callback: CacheFunction<Type>
 ): Promise<Type> {
   try {
-    // Check cache first
     const cachedData = await redis.get(key);
+
     if (cachedData) {
       return JSON.parse(
         typeof cachedData === "string" ? cachedData : JSON.stringify(cachedData)
-      );
+      ) as Type;
     }
 
-    // Execute callback with rate limiting and store the result
-    const result = await limiter.schedule(callback);
+    // If no cache, execute the callback and store the result
+    const result = await callback();
     await redis.set(key, JSON.stringify(result));
 
     return result;
   } catch (error) {
-    console.error(`Error with cache or rate limit for key ${key}:`, error);
+    console.error(`Error with caching for key ${key}`, error);
     throw error; // Re-throw to handle errors elsewhere if needed
   }
+}
+
+/**
+ * Handles rate-limiting using Bottleneck.
+ */
+export function withLimit<Type>(callback: CacheFunction<Type>): Promise<Type> {
+  return limiter.schedule(callback);
+}
+
+/**
+ * Combines caching and rate-limiting. Checks cache first, applies rate limit if needed.
+ */
+export async function withCacheAndLimit<Type>(
+  key: string,
+  callback: CacheFunction<Type>
+): Promise<Type> {
+  return withCache(key, () => withLimit(callback));
+}
+
+export function sleep(time: number) {
+  return new Promise((resolve) => setTimeout(resolve, time));
 }

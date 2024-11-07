@@ -10,7 +10,7 @@ import {
   ArtistCredit,
   Involvement,
 } from "@/lib/musicbrainzTypes";
-import withCacheAndLimit from "@/lib/cache";
+import { sleep, withLimit } from "@/lib/cache";
 
 const BASE_URL = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "DiddyTrackIt/1.0 (canessa.alex@gmail.com)";
@@ -33,8 +33,8 @@ function differenceInDays(date1: string, date2: string): number {
 
 function findClosestRelease(
   releases: Release[],
-  targetDate: string
-): Release | null {
+  targetDate: string = "1989-01-01"
+): Release {
   const normalizedTargetDate = normalizeDate(targetDate);
 
   // Attempt to find the closest official release
@@ -53,7 +53,7 @@ function findClosestRelease(
     }, null);
 
   // If no official release is close enough, fallback to closest release regardless of status
-  return (
+  const closestAnyRelease =
     closestOfficialRelease ||
     releases
       .filter((release) => release.date)
@@ -67,7 +67,18 @@ function findClosestRelease(
             differenceInDays(normalizeDate(closest.date), normalizedTargetDate)
           ? release
           : closest;
-      }, null)
+      }, null);
+
+  // Final fallback: return the earliest release if none found
+  return (
+    closestAnyRelease ||
+    releases.reduce<Release>(
+      (earliest, release) =>
+        !earliest || normalizeDate(release.date) < normalizeDate(earliest.date)
+          ? release
+          : earliest,
+      releases[0] // Fallback to the first release if none have dates
+    )
   );
 }
 
@@ -88,12 +99,11 @@ export function transformRelations(relations: Relation[]): RelationsByType {
 
 export async function getTrackDetailsByISRC(
   isrc: string,
-  targetDate: string
+  targetDate?: string
 ): Promise<TrackDetails | null> {
   const recording = await fetchRecordingByISRC(isrc);
 
   if (!recording) {
-    console.error(`No recording found for ISRC ${isrc}.`);
     return null;
   }
 
@@ -101,11 +111,6 @@ export async function getTrackDetailsByISRC(
     recording.releases || [],
     targetDate
   );
-  if (!closestRelease) {
-    throw new Error(
-      `No matching official release found close to the target date (${targetDate}).`
-    );
-  }
 
   const { transformedRelations } = await fetchRecordingDetails(recording.id);
   const { artist, features, labels } = await fetchReleaseDetails(
@@ -129,16 +134,35 @@ export async function getTrackDetailsByISRC(
   };
 }
 
-async function fetchRecordingByISRC(isrc: string): Promise<Recording | null> {
-  return withCacheAndLimit<Recording | null>(`recording:${isrc}`, async () => {
-    const response = await axios.get<{ recordings: Recording[] }>(
-      `${BASE_URL}/recording`,
-      {
-        headers: { "User-Agent": USER_AGENT },
-        params: { query: `isrc:${isrc}`, fmt: "json" },
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY = 2000;
+
+async function fetchRecordingByISRC(
+  isrc: string,
+  attempt: number = 1
+): Promise<Recording | null> {
+  return withLimit<Recording | null>(async () => {
+    try {
+      const response = await axios.get<{ recordings: Recording[] }>(
+        `${BASE_URL}/recording`,
+        {
+          headers: { "User-Agent": USER_AGENT },
+          params: { query: `isrc:${isrc}`, fmt: "json" },
+        }
+      );
+      return response.data.recordings?.[0] || null;
+    } catch (error) {
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.status === 503 &&
+        attempt < MAX_ATTEMPTS
+      ) {
+        await sleep(RETRY_DELAY * Math.pow(2, attempt - 1));
+        return fetchRecordingByISRC(isrc, attempt + 1);
       }
-    );
-    return response.data.recordings?.[0] || null;
+
+      throw new Error("Failed to fetch recording by ISRC " + isrc);
+    }
   });
 }
 
@@ -150,24 +174,21 @@ type FetchRecordingDetails = {
 async function fetchRecordingDetails(
   recordingId: string
 ): Promise<FetchRecordingDetails> {
-  return withCacheAndLimit<FetchRecordingDetails>(
-    `recording:${recordingId}`,
-    async () => {
-      const response = await axios.get<Recording>(
-        `${BASE_URL}/recording/${recordingId}`,
-        {
-          headers: { "User-Agent": USER_AGENT },
-          params: { inc: "artist-rels", fmt: "json" },
-        }
-      );
+  return withLimit<FetchRecordingDetails>(async () => {
+    const response = await axios.get<Recording>(
+      `${BASE_URL}/recording/${recordingId}`,
+      {
+        headers: { "User-Agent": USER_AGENT },
+        params: { inc: "artist-rels", fmt: "json" },
+      }
+    );
 
-      const relations = response.data.relations || [];
-      const transformedRelations = transformRelations(relations);
-      const producers = extractProducers(relations);
+    const relations = response.data.relations || [];
+    const transformedRelations = transformRelations(relations);
+    const producers = extractProducers(relations);
 
-      return { transformedRelations, producers };
-    }
-  );
+    return { transformedRelations, producers };
+  });
 }
 
 type FetchReleaseDetails = {
@@ -180,32 +201,29 @@ async function fetchReleaseDetails(
   releaseId: string,
   artistCredit: ArtistCredit[]
 ): Promise<FetchReleaseDetails> {
-  return withCacheAndLimit<FetchReleaseDetails>(
-    `release:${releaseId}`,
-    async () => {
-      const response = await axios.get<ReleaseDetails>(
-        `${BASE_URL}/release/${releaseId}`,
-        {
-          headers: { "User-Agent": USER_AGENT },
-          params: { inc: "labels+artists", fmt: "json" },
-        }
-      );
+  return withLimit<FetchReleaseDetails>(async () => {
+    const response = await axios.get<ReleaseDetails>(
+      `${BASE_URL}/release/${releaseId}`,
+      {
+        headers: { "User-Agent": USER_AGENT },
+        params: { inc: "labels+artists", fmt: "json" },
+      }
+    );
 
-      const artist = {
-        id: response.data["artist-credit"][0].artist?.id || "Not found",
-        name: response.data["artist-credit"][0].artist?.name || "Not found",
-      };
+    const artist = {
+      id: response.data["artist-credit"][0].artist?.id || "Not found",
+      name: response.data["artist-credit"][0].artist?.name || "Not found",
+    };
 
-      const features = extractFeatures(artistCredit, artist.id);
-      const labels =
-        response.data["label-info"].map(({ label: { name, id } }) => ({
-          name,
-          id,
-        })) || [];
+    const features = extractFeatures(artistCredit, artist.id);
+    const labels =
+      response.data["label-info"].map(({ label: { name, id } }) => ({
+        name,
+        id,
+      })) || [];
 
-      return { artist, features, labels };
-    }
-  );
+    return { artist, features, labels };
+  });
 }
 
 function extractProducers(relations: Relation[]): NameId[] {

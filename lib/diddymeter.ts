@@ -1,4 +1,5 @@
 import { TrackDetails } from "./musicbrainzTypes";
+import { SpotifyTrackInfo } from "./spotify";
 
 type Entity = {
   id: string;
@@ -207,6 +208,47 @@ export const calculateDiddymeter = (track: TrackData): FinalScore => {
 
   return {
     score: scoreDetails.reduce((acc, detail) => acc + detail.score, 0),
+    score_details: scoreDetails,
+  };
+};
+
+export const calculateDiddymeterFromSpotify = (
+  track: SpotifyTrackInfo
+): FinalScore => {
+  const [mainArtist, ...features] = track.artists;
+  const scoreDetails = BLACKLIST.reduce<ScoreDetail[]>((acc, item) => {
+    const isMainArtist = item.name.toLowerCase() === mainArtist.toLowerCase();
+    const isFeature = features.some(
+      (feature) => feature.toLowerCase() === item.name.toLowerCase()
+    );
+
+    if (isMainArtist && item.type === "artist") {
+      return acc.concat({
+        reason: getContributionMessage(mainArtist, "artist"),
+        score: item.score,
+        type: "artist",
+      });
+    }
+
+    if (isFeature && item.type === "feature") {
+      return acc.concat({
+        reason: getContributionMessage(item.name, "feature"),
+        score: item.score,
+        type: "feature",
+      });
+    }
+
+    return acc;
+  }, []);
+
+  // Calculate the total score based on score details
+  const finalScore = scoreDetails.reduce(
+    (acc, detail) => acc + detail.score,
+    0
+  );
+
+  return {
+    score: finalScore,
     score_details: scoreDetails,
   };
 };

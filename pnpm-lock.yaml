@@ -48,6 +48,9 @@ importers:
         specifier: ^10.0.6
         version: 10.0.6(react-dom@19.0.0-rc-69d4b800-20241021(react@19.0.0-rc-69d4b800-20241021))(react@19.0.0-rc-69d4b800-20241021)
     devDependencies:
+      '@types/fast-levenshtein':
+        specifier: ^0.0.4
+        version: 0.0.4
       '@types/node':
         specifier: ^20
         version: 20.17.5
@@ -380,6 +383,9 @@ packages:
 
   '@tsconfig/node16@1.0.4':
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
+
+  '@types/fast-levenshtein@0.0.4':
+    resolution: {integrity: sha512-tkDveuitddQCxut1Db8eEFfMahTjOumTJGPHmT9E7KUH+DkVq9WTpVvlfenf3S+uCBeu8j5FP2xik/KfxOEjeA==}
 
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
@@ -2291,6 +2297,8 @@ snapshots:
 
   '@tsconfig/node16@1.0.4':
     optional: true
+
+  '@types/fast-levenshtein@0.0.4': {}
 
   '@types/json5@0.0.29': {}
 

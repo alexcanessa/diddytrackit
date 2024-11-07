@@ -31,7 +31,7 @@ export default async function handler(
       limit
     );
     const totalScore = tracks.reduce(
-      (acc, track) => acc + (track?.score.score || 0),
+      (acc, track) => acc + (track?.score?.score || 0),
       0
     );
 

@@ -6,7 +6,11 @@ import { InvolvementIcon } from "./TrackDetails";
 const boxClasses =
   "flex flex-col text-left items-start justify-center p-4 rounded-lg shadow-lg bg-white max-w-md mx-auto border border-gray-200";
 
-const getScoreLabel = (score: number): string => {
+export const getScoreLabel = (score?: number): string => {
+  if (score === undefined) {
+    return "N/D";
+  }
+
   if (score === 0) {
     return "Zero!";
   }
@@ -66,17 +70,19 @@ const CurrentlyPlaying = () => {
           {/* Score Details Breakdown */}
           {currentlyPlaying.score?.score_details?.length > 0 && (
             <ul className="mt-2 text-sm space-y-1">
-              {currentlyPlaying.score.score_details.map((detail, index) => (
-                <li
-                  key={index}
-                  className="flex items-start space-x-2 text-gray-700 text-left"
-                >
-                  <span className="mt-1">
-                    <InvolvementIcon type={detail.type} />
-                  </span>
-                  <span>{detail.reason}</span>
-                </li>
-              ))}
+              {(currentlyPlaying.score?.score_details || []).map(
+                (detail, index) => (
+                  <li
+                    key={index}
+                    className="flex items-start space-x-2 text-gray-700 text-left"
+                  >
+                    <span className="mt-1">
+                      <InvolvementIcon type={detail.type} />
+                    </span>
+                    <span>{detail.reason}</span>
+                  </li>
+                )
+              )}
             </ul>
           )}
 
