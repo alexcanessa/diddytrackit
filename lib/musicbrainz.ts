@@ -11,6 +11,7 @@ import {
   Involvement,
 } from "@/lib/musicbrainzTypes";
 import { sleep, withLimit } from "@/lib/cache";
+import { SpotifyTrackInfo } from "./spotify";
 
 const BASE_URL = "https://musicbrainz.org/ws/2";
 const USER_AGENT = "DiddyTrackIt/1.0 (canessa.alex@gmail.com)";
@@ -32,53 +33,40 @@ function differenceInDays(date1: string, date2: string): number {
 }
 
 function findClosestRelease(
+  isrc: string,
   releases: Release[],
-  targetDate: string = "1989-01-01"
+  targetDate: string = "1989-01-01",
+  targetAlbum?: string
 ): Release {
+  let relevantReleases = releases;
   const normalizedTargetDate = normalizeDate(targetDate);
 
-  // Attempt to find the closest official release
-  const closestOfficialRelease = releases
-    .filter((release) => release.status === "Official" && release.date)
-    .reduce<Release | null>((closest, release) => {
+  if (targetAlbum) {
+    const matchingAlbumReleases = releases.filter(
+      (release) =>
+        release.country === isrc.slice(0, 2) &&
+        release.disambiguation === undefined
+    );
+    relevantReleases = matchingAlbumReleases.length
+      ? matchingAlbumReleases
+      : releases; // Fallback to all releases if no exact match
+  }
+
+  return (
+    relevantReleases.reduce<Release | null>((closest, release) => {
       const daysDifference = differenceInDays(
-        normalizeDate(release.date),
+        normalizeDate(release.date || ""),
         normalizedTargetDate
       );
       return !closest ||
         daysDifference <
-          differenceInDays(normalizeDate(closest.date), normalizedTargetDate)
+          differenceInDays(
+            normalizeDate(closest.date || ""),
+            normalizedTargetDate
+          )
         ? release
         : closest;
-    }, null);
-
-  // If no official release is close enough, fallback to closest release regardless of status
-  const closestAnyRelease =
-    closestOfficialRelease ||
-    releases
-      .filter((release) => release.date)
-      .reduce<Release | null>((closest, release) => {
-        const daysDifference = differenceInDays(
-          normalizeDate(release.date),
-          normalizedTargetDate
-        );
-        return !closest ||
-          daysDifference <
-            differenceInDays(normalizeDate(closest.date), normalizedTargetDate)
-          ? release
-          : closest;
-      }, null);
-
-  // Final fallback: return the earliest release if none found
-  return (
-    closestAnyRelease ||
-    releases.reduce<Release>(
-      (earliest, release) =>
-        !earliest || normalizeDate(release.date) < normalizeDate(earliest.date)
-          ? release
-          : earliest,
-      releases[0] // Fallback to the first release if none have dates
-    )
+    }, null) || relevantReleases[0]
   );
 }
 
@@ -97,19 +85,21 @@ export function transformRelations(relations: Relation[]): RelationsByType {
   }, {});
 }
 
-export async function getTrackDetailsByISRC(
-  isrc: string,
-  targetDate?: string
+export async function getTrackDetailsByQuery(
+  track: SpotifyTrackInfo & { isrc: string }
 ): Promise<TrackDetails | null> {
-  const recording = await fetchRecordingByISRC(isrc);
+  const query = `isrc:${track.isrc}`;
+  const recording = await fetchRecordingByQuery(query);
 
   if (!recording) {
     return null;
   }
 
   const closestRelease = findClosestRelease(
+    track.isrc,
     recording.releases || [],
-    targetDate
+    track.release_date,
+    track.album
   );
 
   const { transformedRelations } = await fetchRecordingDetails(recording.id);
@@ -137,8 +127,8 @@ export async function getTrackDetailsByISRC(
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAY = 2000;
 
-async function fetchRecordingByISRC(
-  isrc: string,
+async function fetchRecordingByQuery(
+  query: string,
   attempt: number = 1
 ): Promise<Recording | null> {
   return withLimit<Recording | null>(async () => {
@@ -147,7 +137,7 @@ async function fetchRecordingByISRC(
         `${BASE_URL}/recording`,
         {
           headers: { "User-Agent": USER_AGENT },
-          params: { query: `isrc:${isrc}`, fmt: "json" },
+          params: { query, fmt: "json" },
         }
       );
       return response.data.recordings?.[0] || null;
@@ -158,10 +148,10 @@ async function fetchRecordingByISRC(
         attempt < MAX_ATTEMPTS
       ) {
         await sleep(RETRY_DELAY * Math.pow(2, attempt - 1));
-        return fetchRecordingByISRC(isrc, attempt + 1);
+        return fetchRecordingByQuery(query, attempt + 1);
       }
 
-      throw new Error("Failed to fetch recording by ISRC " + isrc);
+      throw new Error("Failed to fetch recording by this query " + query);
     }
   });
 }
@@ -241,19 +231,4 @@ function extractFeatures(
   return artistCredit
     .map(({ artist }) => ({ id: artist.id, name: artist.name }))
     .filter((feature) => feature.id !== mainArtistId);
-}
-
-// A utility function to process the ISRCs with batching
-export async function processISRCsInBatches(
-  isrcs: string[],
-  targetDates: string[]
-): Promise<(TrackDetails | null)[]> {
-  const results: (TrackDetails | null)[] = [];
-
-  for (let i = 0; i < isrcs.length; i++) {
-    const trackDetails = await getTrackDetailsByISRC(isrcs[i], targetDates[i]);
-    results.push(trackDetails);
-  }
-
-  return results;
 }

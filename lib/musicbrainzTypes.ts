@@ -19,10 +19,14 @@ export type LabelObject = {
 // Type for an individual release within a recording response
 export type Release = {
   id: string;
+  title: string;
   date: string; // Format "YYYY-MM-DD"
   status: string; // e.g., "Official"
   country?: string; // ISO country code, optional
   labels?: LabelObject[];
+  "artist-credit"?: ArtistCredit[];
+  releases?: Release[];
+  disambiguation?: string;
 };
 
 export interface Artist {

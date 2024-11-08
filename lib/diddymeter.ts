@@ -136,6 +136,12 @@ const BLACKLIST: BlacklistItem[] = [
     type: "artist",
     score: SCORE_PER_ROLE.artist,
   },
+  {
+    id: "b7cf4746-d8b8-4f15-a76f-a2745e860825",
+    name: "Janice Combs Publishing, Inc.",
+    type: "label",
+    score: SCORE_PER_ROLE.label,
+  },
 ];
 
 type MessageTemplate = (name: string, type: string) => string;
