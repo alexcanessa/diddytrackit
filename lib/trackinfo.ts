@@ -4,58 +4,39 @@ import {
   FinalScore,
 } from "@/lib/diddymeter";
 import { getTracksInfo, SpotifyTrackInfo } from "@/lib/spotify";
-import { getTrackDetailsByISRC } from "@/lib/musicbrainz";
-import { TrackDetails } from "@/lib/musicbrainzTypes";
-import { withCache } from "./cache";
+import { getTrackDetailsByMetadata } from "@/lib/musicbrainz";
+import { withCache } from "@/lib/cache";
 
 export type CompleteTrackInfo = SpotifyTrackInfo & {
   score: FinalScore | null;
   error?: string;
 };
-const isCloseMatch = (title1: string, title2: string): boolean => {
-  const normalizedTitle1 = title1.toLowerCase();
-  const normalizedTitle2 = title2.toLowerCase();
-
-  return (
-    normalizedTitle1.includes(normalizedTitle2) ||
-    normalizedTitle2.includes(normalizedTitle1)
-  );
-};
 
 const getFullTrackInfo = async (
-  track: SpotifyTrackInfo & { isrc: string }
+  track: SpotifyTrackInfo
 ): Promise<CompleteTrackInfo | null> => {
-  return withCache(`track-${track.SID}-${track.isrc}`, async () => {
-    const trackDetails: TrackDetails | null = await getTrackDetailsByISRC(
-      track.isrc,
+  return withCache(`track-${track.SID}`, async () => {
+    // Fetch track details by metadata only
+    const trackDetailsByMetadata = await getTrackDetailsByMetadata(
+      track.title,
+      track.artists[0],
+      track.album,
       track.release_date
     );
 
-    if (!trackDetails) {
-      return {
-        ...track,
-        score: calculateDiddymeterFromSpotify(track),
-      };
-    }
+    // Calculate the score based on metadata details if available
+    const score =
+      trackDetailsByMetadata && Object.keys(trackDetailsByMetadata).length > 0
+        ? calculateDiddymeter(trackDetailsByMetadata)
+        : null;
 
-    const isTitleMatch = isCloseMatch(track.title, trackDetails.title);
-    const isArtistMatch = trackDetails.artist
-      ? isCloseMatch(track.artists[0], trackDetails.artist.name)
-      : false;
-
-    let score: FinalScore =
-      isTitleMatch && isArtistMatch
-        ? calculateDiddymeter(trackDetails)
-        : { score: 0, score_details: [] }; // Set score to 0 if matches are not close
-
-    // Fallback to Spotify score if score is 0
-    if (score.score === 0) {
-      score = calculateDiddymeterFromSpotify(track);
-    }
+    // Fallback to Spotify score if no valid score was obtained
+    const finalScore =
+      score && score.score > 0 ? score : calculateDiddymeterFromSpotify(track);
 
     return {
       ...track,
-      score,
+      score: finalScore,
     };
   });
 };
@@ -74,20 +55,14 @@ export async function getCompleteTracksInfo(
   const completeTracksInfo: (CompleteTrackInfo | null)[] = [];
 
   for (const track of tracksInfo) {
-    const { isrc, ...restOfTrack } = track;
-
-    if (!isrc) {
-      continue;
-    }
-
     try {
-      const completeTrackInfo = await getFullTrackInfo({
-        ...restOfTrack,
-        isrc,
-      });
+      const completeTrackInfo = await getFullTrackInfo(track);
       completeTracksInfo.push(completeTrackInfo);
-    } catch {
-      console.error(`Error fetching details for track with ISRC ${track.isrc}`);
+    } catch (error) {
+      console.error(
+        `Error fetching details for track with title ${track.title}`,
+        error
+      );
       completeTracksInfo.push({
         ...track,
         score: null,

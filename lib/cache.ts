@@ -7,9 +7,12 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_TOKEN!,
 });
 
-// Set up Bottleneck limiter
 const limiter = new Bottleneck({
   minTime: 1000, // 1 request per second
+  maxConcurrent: 1, // 1 concurrent request
+  reservoir: 60, // Allow 60 requests per minute (adjust based on API limits)
+  reservoirRefreshAmount: 60, // Refresh to 60 requests
+  reservoirRefreshInterval: 60 * 1000, // every minute
 });
 
 type CacheFunction<Type> = () => Promise<Type>;

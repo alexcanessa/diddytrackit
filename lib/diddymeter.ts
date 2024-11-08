@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { TrackDetails } from "./musicbrainzTypes";
 import { SpotifyTrackInfo } from "./spotify";
 
@@ -44,7 +45,6 @@ export const SCORE_PER_ROLE: Record<string, number> = {
   default: 5,
 };
 
-// Consolidated blacklist with roles and scores
 const BLACKLIST: BlacklistItem[] = [
   {
     id: "61063817-feda-4d21-8ae5-e488e7632eea",
@@ -138,80 +138,52 @@ const BLACKLIST: BlacklistItem[] = [
   },
 ];
 
-type MessageTemplate = (name: string, type: string) => string;
-type ContributionType =
-  | "artist"
-  | "producer"
-  | "composer"
-  | "mix"
-  | "vocal"
-  | "feature"
-  | "label"
-  | "default";
-
-const typeToMessage: Record<ContributionType, MessageTemplate> = {
-  artist: (name) => `${name} is the main artist of this track`,
-  feature: (name) => `${name} is featured on this track`,
-  producer: (name) => `${name} produced this track`,
-  label: (name) => `This track is released under ${name}`,
-  mix: (name) => `${name} mixed this track`,
-  vocal: (name) => `${name} sang on this track`,
-  composer: (name) => `${name} composed the music for this track`,
-  default: (name) => `${name} contributed to this track`,
-};
-
-const defaultMessage: MessageTemplate = (name, type) =>
-  `${name} contributed as ${type}`;
-
-function getContributionMessage(name: string, type: ContributionType): string {
-  return (typeToMessage[type] || defaultMessage)(name, type);
+function getContributionMessage(name: string, type: string): string {
+  return `${name} contributed as ${type}`;
 }
 
-// Reusable function to check and score based on type
-const scoreEntities = (
-  entities: Entity[],
-  type: ContributionType
-): ScoreDetail[] => {
+// Helper to generate score details for given entities and type
+const scoreEntities = (entities: Entity[], type: string): ScoreDetail[] => {
   return entities
     .filter((entity) =>
-      BLACKLIST.some((item) => item.id === entity.id && item.type === type)
+      BLACKLIST.some((item) => item?.id === entity?.id && item.type === type)
     )
-    .map((entity) => {
-      const blacklistItem = BLACKLIST.find(
-        (item) => item.id === entity.id && item.type === type
-      );
-      return {
-        reason: getContributionMessage(
-          blacklistItem?.name ?? entity.name,
-          type
-        ),
-        score: blacklistItem?.score ?? SCORE_PER_ROLE.default,
-        type: type,
-      };
-    });
+    .map((entity) => ({
+      reason: getContributionMessage(entity.name, type),
+      score:
+        BLACKLIST.find((item) => item?.id === entity?.id && item.type === type)
+          ?.score || 5,
+      type: type as BlacklistItem["type"],
+    }));
 };
 
-// Main scoring function, handling known types and default cases
+// Main scoring function
 export const calculateDiddymeter = (track: TrackData): FinalScore => {
-  const scoreDetails: ScoreDetail[] = [
-    ...scoreEntities([track.artist], "artist"),
-    ...scoreEntities(track.features, "feature"),
-    ...scoreEntities(track.producers, "producer"),
-    ...scoreEntities(track.labels, "label"),
-    ...track.involvement.flatMap(({ type, artists }) =>
-      scoreEntities(
-        artists,
-        (SCORE_PER_ROLE[type] ? type : "default") as ContributionType
-      )
-    ),
-  ];
+  // Collect score details and remove duplicates by `reason`
+  const scoreDetails = _.uniqBy(
+    [
+      ...scoreEntities([track.artist], "artist"),
+      ...scoreEntities(track.features, "feature"),
+      ...scoreEntities(track.producers, "producer"),
+      ...scoreEntities(track.labels, "label"),
+      ...track.involvement.flatMap(({ type, artists }) =>
+        scoreEntities(
+          artists,
+          (SCORE_PER_ROLE[type] ? type : "default") as BlacklistItem["type"]
+        )
+      ),
+    ],
+    "reason"
+  );
 
+  // Calculate the final score
   return {
     score: scoreDetails.reduce((acc, detail) => acc + detail.score, 0),
     score_details: scoreDetails,
   };
 };
 
+// Fallback function using Spotify data
 export const calculateDiddymeterFromSpotify = (
   track: SpotifyTrackInfo
 ): FinalScore => {
