@@ -2,6 +2,8 @@ import {
   calculateDiddymeter,
   calculateDiddymeterFromSpotify,
   FinalScore,
+  BlacklistItem,
+  ScorePerRole,
 } from "@/lib/diddymeter";
 import { getTracksInfo, SpotifyTrackInfo } from "@/lib/spotify";
 import { getTrackDetailsByQuery } from "@/lib/musicbrainz";
@@ -14,7 +16,14 @@ export type CompleteTrackInfo = SpotifyTrackInfo & {
 };
 
 const getFullTrackInfo = async (
-  track: SpotifyTrackInfo & { isrc: string }
+  track: SpotifyTrackInfo & { isrc: string },
+  {
+    scorePerRole,
+    blackList,
+  }: {
+    scorePerRole: ScorePerRole;
+    blackList: BlacklistItem[];
+  }
 ): Promise<CompleteTrackInfo | null> => {
   return withCache(`track-${track.SID}-${track.isrc}`, async () => {
     const trackDetails: TrackDetails | null =
@@ -23,15 +32,19 @@ const getFullTrackInfo = async (
     if (!trackDetails) {
       return {
         ...track,
-        score: calculateDiddymeterFromSpotify(track),
+        score: calculateDiddymeterFromSpotify(track, blackList),
       };
     }
 
-    let score: FinalScore = calculateDiddymeter(trackDetails);
+    let score: FinalScore = calculateDiddymeter(
+      trackDetails,
+      scorePerRole,
+      blackList
+    );
 
     // Fallback to Spotify score if score is 0
     if (score.score === 0) {
-      score = calculateDiddymeterFromSpotify(track);
+      score = calculateDiddymeterFromSpotify(track, blackList);
     }
 
     return {
@@ -44,7 +57,14 @@ const getFullTrackInfo = async (
 export async function getCompleteTracksInfo(
   spotifyUrl: string,
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  {
+    scorePerRole,
+    blackList,
+  }: {
+    scorePerRole: ScorePerRole;
+    blackList: BlacklistItem[];
+  }
 ): Promise<{ tracks: (CompleteTrackInfo | null)[]; total: number }> {
   const { tracks: tracksInfo, total } = await getTracksInfo(
     spotifyUrl,
@@ -62,10 +82,16 @@ export async function getCompleteTracksInfo(
     }
 
     try {
-      const completeTrackInfo = await getFullTrackInfo({
-        ...restOfTrack,
-        isrc,
-      });
+      const completeTrackInfo = await getFullTrackInfo(
+        {
+          ...restOfTrack,
+          isrc,
+        },
+        {
+          scorePerRole,
+          blackList,
+        }
+      );
       completeTracksInfo.push(completeTrackInfo);
     } catch {
       console.error(`Error fetching details for track with ISRC ${track.isrc}`);
