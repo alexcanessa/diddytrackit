@@ -44,7 +44,6 @@ export const SCORE_PER_ROLE: Record<string, number> = {
   default: 5,
 };
 
-// Consolidated blacklist with roles and scores
 const BLACKLIST: BlacklistItem[] = [
   {
     id: "61063817-feda-4d21-8ae5-e488e7632eea",
@@ -141,6 +140,90 @@ const BLACKLIST: BlacklistItem[] = [
     name: "Janice Combs Publishing, Inc.",
     type: "label",
     score: SCORE_PER_ROLE.label,
+  },
+  {
+    id: "c2d25856-a09a-4d15-b404-77dd19c19e63",
+    name: "R. Kelly",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "c234fa42-e6a6-443e-937e-2f4b073538a3",
+    name: "Chris Brown",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "2282c539-05a2-477c-82b7-fe40798d37f3",
+    name: "Tekashi 6ix9ine",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "2c1f05d8-987e-4e43-987c-aa9bdc265f8c",
+    name: "Ian Watkins (Lostprophets)",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "5e05d900-51e0-4dda-81e2-f4c0bd7ed5e6",
+    name: "Gary Glitter",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "e7b587f7-e678-47c1-81dd-e7bb7855b0f9",
+    name: "Phil Spector",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "637504e3-be95-4005-83ee-3ebb91f9fcf9",
+    name: "Sid Vicious",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "2787bddf-6439-4c73-8162-5f4a1e5fa030",
+    name: "Boy George",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "31424ace-6e99-4322-8ef8-66dafa32cfac",
+    name: "The Pied Piper",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "f1d83aa8-7830-4aa6-906f-ac19d8862155",
+    name: "R. Kelly Publishing Inc.",
+    type: "label",
+    score: SCORE_PER_ROLE.label,
+  },
+  {
+    id: "ef6e2e49-aa93-41bd-89b0-8c7d2f260a83",
+    name: "Lostprophets",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "d11ea68a-59ed-484a-976c-24eba358280e",
+    name: "Philles Records",
+    type: "label",
+    score: SCORE_PER_ROLE.label,
+  },
+  {
+    id: "e5db18cb-4b1f-496d-a308-548b611090d3",
+    name: "Sex Pistols",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
+  },
+  {
+    id: "81435053-e1a2-48a4-adfd-e89f310c7b38",
+    name: "Culture Club",
+    type: "artist",
+    score: SCORE_PER_ROLE.artist,
   },
 ];
 
