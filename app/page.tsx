@@ -135,16 +135,16 @@ export default function Home() {
         layout={submitState === "none" ? "default" : "slim"}
       />
       <p className="text-center px-8 text-lg">
-        See how likely it is that Diddy is cashing in on your Spotify tracks.
+        See how likely it is that Diddy or other flagged artists, labels, or
+        bands are profiting from your Spotify tracks.
       </p>
       <p className="text-center mb-9 px-8 text-gray-600 text-sm">
-        Diddy is just the start - when other names come up, we will keep{" "}
-        <Link href="/involvement" className="text-[#803977] underline">
-          the list
+        Diddy is just the beginning – check out{" "}
+        <Link href="/artists" className="text-[#803977] underline">
+          the full list
         </Link>{" "}
-        updated.
+        to see who else is being tracked and why.
       </p>
-
       <div className="flex flex-col items-center justify-center mx-auto max-w-[500px] px-5">
         <SingleInputForm
           placeholder="Enter a Spotify Track or Playlist URL"

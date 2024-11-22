@@ -26,7 +26,7 @@ export default function RootLayout({
             <BurgerMenuWindow
               menuItems={[
                 { label: "Diddy Track It?", href: "/" },
-                { label: "Diddy Do It?", href: "/involvement" },
+                { label: "What Diddy do?", href: "/artists" },
               ]}
             />
             <main>{children}</main>

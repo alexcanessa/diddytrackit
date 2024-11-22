@@ -20,6 +20,7 @@ model Artist {
   id        Int       @id @default(autoincrement())
   name      String    @unique
   mbid      String?   @unique // MusicBrainz ID (optional)
+  imageUrl  String?
   reason    String?   // Why the artist is on the blacklist
   labels    Label[]   @relation("ArtistLabels") // One-to-many relationship
   bands     Band[]    @relation("ArtistBands") // Many-to-many relationship

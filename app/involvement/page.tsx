@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import Chip from "@/components/Chip";
 import PersonCard, {
-  Person,
+  InvolvementPerson,
   InvolvementType,
   involvementTypes,
 } from "@/components/PersonCard";
@@ -14,8 +14,8 @@ type InvolvementCounts = Record<InvolvementType, number>;
 
 export default function InvolvementPage() {
   const [selectedTypes, setSelectedTypes] = useState<InvolvementType[]>([]);
-  const [peopleData, setPeopleData] = useState<Person[]>([]);
-  const [filteredPeople, setFilteredPeople] = useState<Person[]>([]);
+  const [peopleData, setPeopleData] = useState<InvolvementPerson[]>([]);
+  const [filteredPeople, setFilteredPeople] = useState<InvolvementPerson[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Count the occurrences of each involvement type in the data
@@ -62,7 +62,7 @@ export default function InvolvementPage() {
       setIsLoading(true);
       try {
         const response = await fetch("/api/involvements");
-        const data: Person[] = await response.json();
+        const data: InvolvementPerson[] = await response.json();
         setPeopleData(data);
         setFilteredPeople(data); // Initial display of all data
       } catch (error) {
@@ -103,7 +103,11 @@ export default function InvolvementPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 max-w-5xl mx-auto">
           {filteredPeople.map((person) => (
-            <PersonCard key={person.name.toLowerCase()} person={person} />
+            <PersonCard
+              key={person.name.toLowerCase()}
+              person={person}
+              type="involvement"
+            />
           ))}
         </div>
       )}
